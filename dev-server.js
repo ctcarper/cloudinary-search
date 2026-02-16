@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const searchHandler = require('./api/search.js');
 const uploadHandler = require('./api/upload.js');
+const foldersHandler = require('./api/folders.js');
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -87,6 +88,36 @@ const server = http.createServer((req, res) => {
     // Call handler and catch any errors
     uploadHandler(req, vres).catch(err => {
       console.error('Upload handler error:', err.message);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+
+  } else if (pathname === '/api/folders') {
+    // Wrap response with necessary methods for folders handler
+    const vres = res;
+    
+    // Ensure status method exists
+    if (!vres.status) {
+      vres.status = function(code) {
+        this.statusCode = code;
+        return this;
+      };
+    }
+    
+    // Ensure json method exists
+    if (!vres.json) {
+      vres.json = function(obj) {
+        this.setHeader('Content-Type', 'application/json');
+        this.writeHead(this.statusCode || 200);
+        this.end(JSON.stringify(obj));
+      };
+    }
+    
+    // Call handler and catch any errors
+    foldersHandler(req, vres).catch(err => {
+      console.error('Folders handler error:', err.message);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));

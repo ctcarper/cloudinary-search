@@ -155,6 +155,23 @@
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+      background-color: white;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
     .button-group {
       display: flex;
       gap: 10px;
@@ -349,6 +366,14 @@
       </div>
 
       <div class="form-group">
+        <label for="folderSelect">Media Library Folder</label>
+        <select id="folderSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">
+          <option value="">Loading folders...</option>
+        </select>
+        <div class="hint-text">Select which folder to upload this image to</div>
+      </div>
+
+      <div class="form-group">
         <label for="processingOcrText">OCR Text (extracted from image)</label>
         <textarea id="processingOcrText" readonly placeholder="Text will appear here after upload..."></textarea>
         <div class="hint-text">ℹ️ Will be converted to searchable tags (ocr_ prefix)</div>
@@ -398,6 +423,7 @@
     const processingOcrText = document.getElementById('processingOcrText');
     const processingProgress = document.getElementById('processingProgress');
     const totalToProcess = document.getElementById('totalToProcess');
+    const folderSelect = document.getElementById('folderSelect');
     const message = document.getElementById('message');
     const loadingText = document.getElementById('loadingText');
     const summaryContent = document.getElementById('summaryContent');
@@ -411,6 +437,43 @@
     let fileQueue = [];
     let currentFileIndex = 0;
     let uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [] };
+
+    // Fetch folders from API
+    async function loadFolders() {
+      try {
+        const response = await fetch('/api/folders');
+        const data = await response.json();
+        
+        if (data.folders && Array.isArray(data.folders)) {
+          folderSelect.innerHTML = '';
+          
+          // Add root folder option
+          const rootOption = document.createElement('option');
+          rootOption.value = '';
+          rootOption.textContent = 'Root Folder';
+          folderSelect.appendChild(rootOption);
+          
+          // Add other folders
+          data.folders.forEach(folderPath => {
+            if (folderPath) { // Skip empty strings (already added as root)
+              const option = document.createElement('option');
+              option.value = folderPath;
+              // Format folder path for display (last part of path)
+              const displayName = folderPath.split('/').pop();
+              option.textContent = displayName || folderPath;
+              folderSelect.appendChild(option);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading folders:', error);
+        // Set fallback option if fetch fails
+        folderSelect.innerHTML = '<option value="">Root Folder (error loading folders)</option>';
+      }
+    }
+
+    // Load folders when page loads
+    loadFolders();
 
     // Dropzone listeners
     dropzone.addEventListener('click', () => fileInput.click());
@@ -505,6 +568,11 @@
         const formData = new FormData();
         formData.append('file', currentItem.file);
         formData.append('name', processingImageName.value.trim());
+        
+        // Add selected folder if one is chosen
+        if (folderSelect.value) {
+          formData.append('folder', folderSelect.value);
+        }
 
         const response = await fetch('/api/upload', {
           method: 'POST',

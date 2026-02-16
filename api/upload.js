@@ -113,6 +113,12 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       tags: [metadata.name].filter(tag => tag) // Only include name, not tapYear
     };
 
+    // Add folder if specified
+    if (metadata.folder) {
+      options.folder = metadata.folder;
+      console.log('Upload folder:', metadata.folder);
+    }
+
     console.log('Upload options:', JSON.stringify(options, null, 2));
     console.log('Tags being sent:', options.tags);
     console.log('Calling cloudinary.uploader.upload...');
@@ -318,8 +324,9 @@ module.exports = async (req, res) => {
     // Extract metadata
     const imageName = Array.isArray(fields.name) ? fields.name[0] : fields.name;
     const tapYear = Array.isArray(fields.tapYear) ? fields.tapYear[0] : (fields.tapYear || null);
+    const folder = Array.isArray(fields.folder) ? fields.folder[0] : (fields.folder || null);
 
-    console.log('Metadata:', { imageName, tapYear });
+    console.log('Metadata:', { imageName, tapYear, folder });
 
     if (!imageName) {
       console.log('Missing metadata: name is required');
@@ -340,7 +347,7 @@ module.exports = async (req, res) => {
     const cloudinaryResponse = await uploadToCloudinary(
       tempFilePath,
       filename,
-      { name: imageName, tapYear: tapYear }
+      { name: imageName, tapYear: tapYear, folder: folder }
     );
 
     console.log('Cloudinary upload complete. Response keys:', Object.keys(cloudinaryResponse));
