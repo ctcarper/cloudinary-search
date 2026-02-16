@@ -165,12 +165,23 @@ function generateOCRTags(ocrText) {
     return [];
   }
 
+  // Preprocess: Clean up problematic characters and formatting
+  let cleanedText = ocrText
+    // Remove special symbols and Greek letters
+    .replace(/[Σσ]/g, '')  // Remove Sigma symbols
+    .replace(/[\r\n]+/g, ' ')  // Replace newlines with spaces
+    .replace(/\\n/g, ' ')  // Replace literal \n with spaces
+    .replace(/ocr_/g, '')  // Remove ocr_ prefix
+    .replace(/\\t/g, ' ')  // Replace literal tabs
+    .replace(/\s+/g, ' ')  // Collapse multiple spaces into one
+    .trim();
+
   // Words/phrases to exclude
   const excludePatterns = ['Front Row:', 'Second Row:', 'Third Row:', 'Middle Row:'];
   const excludeWords = ['poly', 'polygon', 'vertex', 'vertices', 'edge', 'edges', 'face', 'faces', 'mesh', 'model', 'object', 'geometry', 'texture', 'material', '//', 'http', 'www', 'com', 'org', 'net'];
 
   // Split by commas and extract names only
-  const tags = ocrText
+  const tags = cleanedText
     .split(',')
     .map(item => {
       // Remove row labels from the item
@@ -178,8 +189,8 @@ function generateOCRTags(ocrText) {
       excludePatterns.forEach(pattern => {
         cleaned = cleaned.replace(pattern, '').trim();
       });
-      // Remove carriage returns, newlines, backslashes, and forward slashes
-      cleaned = cleaned.replace(/[\r\n\t\\/]/g, ' ').trim();
+      // Remove any remaining special characters
+      cleaned = cleaned.replace(/[^a-zA-Z\s\-'\.]/g, ' ').trim();
       return cleaned;
     })
     .map(item => {
@@ -192,7 +203,7 @@ function generateOCRTags(ocrText) {
       // Skip empty strings
       if (!item || item.length < 2) return false;
       
-      // Skip items with JSON-like patterns, braces, quotes, colons
+      // Skip items with JSON-like patterns, braces, quotes, colons (already removed most special chars above)
       if (/[\{\}\[\]:\\"']/.test(item)) return false;
       
       // Skip items with mostly numbers or coordinates
@@ -207,7 +218,7 @@ function generateOCRTags(ocrText) {
       const lowerItem = item.toLowerCase();
       if (excludeWords.some(word => lowerItem.includes(word))) return false;
       
-      // Skip items with too many special characters
+      // Skip items with too many special characters (should be minimal now)
       const specialCharCount = (item.match(/[^a-zA-Z\s\-'\.]/g) || []).length;
       if (specialCharCount > 2) return false;
       
