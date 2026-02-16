@@ -438,10 +438,17 @@
     let currentFileIndex = 0;
     let uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [] };
 
+    // Determine API base URL based on environment
+    const API_BASE_URL = window.location.hostname === 'localhost' 
+      ? `${window.location.origin}`
+      : `https://cloudinary-search.vercel.app`;
+
     // Fetch folders from API
     async function loadFolders() {
       try {
-        const response = await fetch('/api/folders');
+        const foldersUrl = `${API_BASE_URL}/api/folders`;
+        console.log('Loading folders from:', foldersUrl);
+        const response = await fetch(foldersUrl);
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
@@ -582,7 +589,8 @@
           formData.append('folder', folderSelect.value);
         }
 
-        const response = await fetch('/api/upload', {
+        const uploadUrl = `${API_BASE_URL}/api/upload`;
+        const response = await fetch(uploadUrl, {
           method: 'POST',
           body: formData
         });
