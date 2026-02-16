@@ -176,62 +176,42 @@ function generateOCRTags(ocrText) {
     .replace(/\s+/g, ' ')  // Collapse multiple spaces into one
     .trim();
 
-  // Words/phrases to exclude
-  const excludePatterns = ['Front Row:', 'Second Row:', 'Third Row:', 'Middle Row:'];
-  const excludeWords = ['poly', 'polygon', 'vertex', 'vertices', 'edge', 'edges', 'face', 'faces', 'mesh', 'model', 'object', 'geometry', 'texture', 'material', '//', 'http', 'www', 'com', 'org', 'net'];
-
-  // Split by commas and extract names only
+  // Split by commas to get individual names
   const tags = cleanedText
     .split(',')
     .map(item => {
-      // Remove row labels from the item
+      // Trim whitespace
       let cleaned = item.trim();
-      excludePatterns.forEach(pattern => {
-        cleaned = cleaned.replace(pattern, '').trim();
-      });
-      // Remove any remaining special characters
-      cleaned = cleaned.replace(/[^a-zA-Z\s\-'\.]/g, ' ').trim();
+      
+      // Remove descriptions in parentheses and extra text after them
+      cleaned = cleaned.replace(/\s*\(.*\)\s*/g, '').trim();
+      
+      // Remove any row labels
+      cleaned = cleaned.replace(/^(Front|Second|Third|Middle)\s+Row:\s*/i, '').trim();
+      
+      // Remove any trailing non-alphabetic characters
+      cleaned = cleaned.replace(/[^a-zA-Z\s\-\.\']+$/g, '').trim();
+      
       return cleaned;
-    })
-    .map(item => {
-      // Extract only the name portion - typically capitalized words at the start
-      // Remove any trailing descriptions or extra text after the name
-      const nameMatch = item.match(/^([A-Za-z\s\-'\.]+?)(?:\s*\(.*\)|$)/);
-      return nameMatch ? nameMatch[1].trim() : item;
     })
     .filter(item => {
       // Skip empty strings
       if (!item || item.length < 2) return false;
       
-      // Skip items with JSON-like patterns, braces, quotes, colons (already removed most special chars above)
-      if (/[\{\}\[\]:\\"']/.test(item)) return false;
-      
-      // Skip items with mostly numbers or coordinates
-      const letterCount = (item.match(/[a-zA-Z]/g) || []).length;
-      const numberCount = (item.match(/\d/g) || []).length;
-      if (numberCount > letterCount) return false;
-      
-      // Require at least some alphabetic characters
+      // Must contain at least one letter
       if (!/[a-zA-Z]/.test(item)) return false;
       
-      // Skip technical/non-name terms
+      // Skip items that are just numbers or technical terms
       const lowerItem = item.toLowerCase();
-      if (excludeWords.some(word => lowerItem.includes(word))) return false;
+      const technicalTerms = ['sigma', 'back', 'row', 'front', 'second', 'third', 'middle', 'side', 'group'];
+      if (technicalTerms.some(term => lowerItem === term)) return false;
       
-      // Skip items with too many special characters (should be minimal now)
-      const specialCharCount = (item.match(/[^a-zA-Z\s\-'\.]/g) || []).length;
-      if (specialCharCount > 2) return false;
-      
-      // Require at least one space (first and last name) or at least 4 characters for single names
-      if (!item.includes(' ') && item.length < 4) return false;
+      // Require at least 3 characters for single words, or accept 2+ word names
+      if (!item.includes(' ') && item.length < 3) return false;
       
       return true;
     })
-    .slice(0, 30) // Limit to 30 tags
-    .filter(tag => {
-      // Final check: remove tags that are just punctuation or spaces
-      return /[a-zA-Z]/.test(tag);
-    });
+    .slice(0, 30); // Limit to 30 tags
 
   // Deduplicate tags (case-insensitive)
   const uniqueTags = Array.from(new Set(tags.map(tag => tag.toLowerCase())))
