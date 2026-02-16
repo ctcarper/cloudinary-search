@@ -261,11 +261,50 @@
       font-size: 12px;
       color: #666;
     }
+
+    .queue-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .queue-item.uploading {
+      background: #ede9ff;
+      border-color: #667eea;
+    }
+
+    .queue-item.uploaded {
+      background: #d4edda;
+      border-color: #28a745;
+    }
+
+    .queue-item.error {
+      background: #f8d7da;
+      border-color: #dc3545;
+    }
+
+    .queue-item-name {
+      flex: 1;
+      word-break: break-word;
+      color: #333;
+    }
+
+    .queue-item-status {
+      margin-left: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📸 Image Uploader</h1>
+    <h1>📸 Bulk Image Uploader</h1>
 
     <div id="message" class="message"></div>
 
@@ -273,36 +312,51 @@
     <div id="uploadSection" class="upload-section active">
       <div class="dropzone" id="dropzone">
         <div class="dropzone-icon">📁</div>
-        <div class="dropzone-text">Drag and drop your image here</div>
-        <div class="dropzone-hint">or click to select a file</div>
+        <div class="dropzone-text">Drag and drop your images here</div>
+        <div class="dropzone-hint">or click to select multiple files</div>
       </div>
-      <input type="file" id="fileInput" accept="image/*">
+      <input type="file" id="fileInput" accept="image/*" multiple>
     </div>
 
-    <!-- Preview & Metadata Section -->
-    <div id="previewSection" class="preview-section">
-      <img id="previewImage" class="preview-image" alt="Preview">
-      
-      <div class="file-info">
-        <strong>File:</strong> <span id="fileName"></span><br>
-        <strong>Size:</strong> <span id="fileSize"></span>
-      </div>
-
+    <!-- Queue Section -->
+    <div id="queueSection" class="preview-section">
       <div class="form-group">
-        <label for="ocrText">OCR Text (extracted from image)</label>
-        <textarea id="ocrText" readonly placeholder="Text will appear here after upload..."></textarea>
-        <div class="hint-text">ℹ️ Will be populated after upload processing</div>
-      </div>
-
-      <div class="form-group">
-        <label for="imageName">Image Name *</label>
-        <input type="text" id="imageName" placeholder="e.g., Sample Image Name" required>
-        <div class="hint-text">This will be stored in image metadata</div>
+        <label>Files to Upload (<span id="queueCount">0</span>)</label>
+        <div id="fileQueue" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px;">
+        </div>
       </div>
 
       <div class="button-group">
-        <button class="btn-upload" id="submitBtn">Upload Image</button>
-        <button class="btn-cancel" id="cancelBtn">Cancel</button>
+        <button class="btn-upload" id="startUploadBtn">Upload All</button>
+        <button class="btn-cancel" id="clearQueueBtn">Clear Queue</button>
+      </div>
+    </div>
+
+    <!-- Current File Processing Section -->
+    <div id="processingSection" class="preview-section">
+      <img id="processingImage" class="preview-image" alt="Preview">
+      
+      <div class="file-info">
+        <strong>File:</strong> <span id="processingFileName"></span><br>
+        <strong>Size:</strong> <span id="processingFileSize"></span><br>
+        <strong>Progress:</strong> <span id="processingProgress">0</span> of <span id="totalToProcess">0</span>
+      </div>
+
+      <div class="form-group">
+        <label for="processingImageName">Image Name *</label>
+        <input type="text" id="processingImageName" placeholder="e.g., Sample Image Name" required>
+        <div class="hint-text">This will be stored in image metadata and as OCR tags</div>
+      </div>
+
+      <div class="form-group">
+        <label for="processingOcrText">OCR Text (extracted from image)</label>
+        <textarea id="processingOcrText" readonly placeholder="Text will appear here after upload..."></textarea>
+        <div class="hint-text">ℹ️ Will be converted to searchable tags (ocr_ prefix)</div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-upload" id="uploadCurrentBtn">Upload This & Continue</button>
+        <button class="btn-cancel" id="skipCurrentBtn">Skip & Continue</button>
       </div>
     </div>
 
@@ -311,25 +365,52 @@
       <div class="spinner"></div>
       <div id="loadingText">Processing your image...</div>
     </div>
+
+    <!-- Summary Section -->
+    <div id="summarySection" class="preview-section">
+      <div class="form-group">
+        <label>Upload Summary</label>
+        <div id="summaryContent" style="background: #f8f9fa; padding: 15px; border-radius: 6px; font-size: 14px; line-height: 1.6;">
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-upload" id="uploadMoreBtn">Upload More</button>
+      </div>
+    </div>
   </div>
 
   <script>
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const uploadSection = document.getElementById('uploadSection');
-    const previewSection = document.getElementById('previewSection');
+    const queueSection = document.getElementById('queueSection');
+    const processingSection = document.getElementById('processingSection');
+    const summarySection = document.getElementById('summarySection');
     const loading = document.getElementById('loading');
-    const previewImage = document.getElementById('previewImage');
-    const fileName = document.getElementById('fileName');
-    const fileSize = document.getElementById('fileSize');
-    const imageName = document.getElementById('imageName');
-    const ocrText = document.getElementById('ocrText');
-    const submitBtn = document.getElementById('submitBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
+    
+    const fileQueueDiv = document.getElementById('fileQueue');
+    const queueCount = document.getElementById('queueCount');
+    const processingImage = document.getElementById('processingImage');
+    const processingFileName = document.getElementById('processingFileName');
+    const processingFileSize = document.getElementById('processingFileSize');
+    const processingImageName = document.getElementById('processingImageName');
+    const processingOcrText = document.getElementById('processingOcrText');
+    const processingProgress = document.getElementById('processingProgress');
+    const totalToProcess = document.getElementById('totalToProcess');
     const message = document.getElementById('message');
     const loadingText = document.getElementById('loadingText');
+    const summaryContent = document.getElementById('summaryContent');
 
-    let selectedFile = null;
+    const startUploadBtn = document.getElementById('startUploadBtn');
+    const clearQueueBtn = document.getElementById('clearQueueBtn');
+    const uploadCurrentBtn = document.getElementById('uploadCurrentBtn');
+    const skipCurrentBtn = document.getElementById('skipCurrentBtn');
+    const uploadMoreBtn = document.getElementById('uploadMoreBtn');
+
+    let fileQueue = [];
+    let currentFileIndex = 0;
+    let uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [] };
 
     // Dropzone listeners
     dropzone.addEventListener('click', () => fileInput.click());
@@ -348,100 +429,88 @@
       dropzone.classList.remove('dragover');
       
       const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        handleFile(files[0]);
-      }
+      addFilestoQueue(Array.from(files));
     });
 
     fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) {
-        handleFile(e.target.files[0]);
-      }
+      addFilestoQueue(Array.from(e.target.files));
     });
 
-    function handleFile(file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        showMessage('Please select an image file', 'error');
+    function addFilestoQueue(files) {
+      const validFiles = files.filter(f => f.type.startsWith('image/'));
+      
+      if (validFiles.length === 0) {
+        showMessage('Please select image files only', 'error');
         return;
       }
 
-      selectedFile = file;
+      fileQueue = validFiles.map(file => ({
+        file,
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        status: 'pending'
+      }));
 
-      // Display preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        previewImage.src = e.target.result;
-        fileName.textContent = file.name;
-        fileSize.textContent = (file.size / 1024).toFixed(2) + ' KB';
-      };
-      reader.readAsDataURL(file);
-
-      // Show preview section
+      updateQueueDisplay();
       uploadSection.classList.remove('active');
-      previewSection.classList.add('active');
-      ocrText.value = '';
-      imageName.value = '';
-
-      // Auto-extract name from filename
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-      imageName.value = nameWithoutExt;
+      queueSection.classList.add('active');
+      fileInput.value = '';
     }
 
+    function updateQueueDisplay() {
+      queueCount.textContent = fileQueue.length;
+      fileQueueDiv.innerHTML = fileQueue.map((item, idx) => `
+        <div class="queue-item ${item.status}" id="queue-${idx}">
+          <div class="queue-item-name">${idx + 1}. ${item.file.name}</div>
+          <div class="queue-item-status">${item.status}</div>
+        </div>
+      `).join('');
+    }
 
-
-    cancelBtn.addEventListener('click', () => {
-      previewSection.classList.remove('active');
+    clearQueueBtn.addEventListener('click', () => {
+      fileQueue = [];
+      queueSection.classList.remove('active');
       uploadSection.classList.add('active');
-      selectedFile = null;
-      fileInput.value = '';
       resetMessage();
     });
 
-    submitBtn.addEventListener('click', async () => {
-      // Validate inputs
-      if (!imageName.value.trim()) {
+    startUploadBtn.addEventListener('click', () => {
+      if (fileQueue.length === 0) {
+        showMessage('No files in queue', 'error');
+        return;
+      }
+
+      currentFileIndex = 0;
+      uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [] };
+      totalToProcess.textContent = fileQueue.length;
+      
+      queueSection.classList.remove('active');
+      processNextFile();
+    });
+
+    uploadCurrentBtn.addEventListener('click', async () => {
+      if (!processingImageName.value.trim()) {
         showMessage('Please enter an image name', 'error');
         return;
       }
-      if (!selectedFile) {
-        showMessage('No file selected', 'error');
-        return;
-      }
 
-      await uploadImage();
-    });
+      uploadCurrentBtn.disabled = true;
+      skipCurrentBtn.disabled = true;
 
-    async function uploadImage() {
       try {
-        // Show loading
-        previewSection.classList.remove('active');
+        processingSection.classList.remove('active');
         loading.classList.add('active');
         loadingText.textContent = 'Uploading and processing with OCR...';
-        submitBtn.disabled = true;
 
-        // Create FormData
+        const currentItem = fileQueue[currentFileIndex];
         const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('name', imageName.value.trim());
+        formData.append('file', currentItem.file);
+        formData.append('name', processingImageName.value.trim());
 
-        console.log('Sending upload request to /api/upload');
-        console.log('File name:', selectedFile.name);
-        console.log('Image name:', imageName.value.trim());
-
-        // Call upload endpoint
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response headers:', {
-          contentType: response.headers.get('content-type'),
-          contentLength: response.headers.get('content-length')
-        });
-
-        // Check if response is ok before parsing JSON
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           let errorMessage = `Upload failed (${response.status})`;
@@ -455,62 +524,121 @@
               errorMessage = errorText || errorMessage;
             }
           } catch (e) {
-            console.error('Error parsing error response:', e);
-            errorMessage = `Server error (${response.status}): Check console logs`;
+            errorMessage = `Server error (${response.status})`;
           }
           
           throw new Error(errorMessage);
         }
 
-        let data;
-        try {
-          const responseText = await response.text();
-          console.log('Response body length:', responseText.length);
-          console.log('Response body (first 200 chars):', responseText.substring(0, 200));
-          
-          if (!responseText) {
-            throw new Error('Empty response from server');
-          }
-          
-          data = JSON.parse(responseText);
-        } catch (e) {
-          console.error('JSON parse error:', e.message);
-          throw new Error('Server returned invalid response: ' + e.message);
+        const responseText = await response.text();
+        if (!responseText) {
+          throw new Error('Empty response from server');
         }
+        
+        const data = JSON.parse(responseText);
 
-        console.log('Parsed response:', data);
+        currentItem.status = 'uploaded';
+        uploadSummary.success++;
+        updateQueueDisplay();
 
-        // Populate OCR text
-        ocrText.value = data.ocrText || 'No text detected';
-
-        // Show success with tags confirmation
         loading.classList.remove('active');
-        previewSection.classList.add('active');
-        submitBtn.disabled = false;
-
-        const tagsInfo = data.tags ? `\nCloudinary Tags: ${data.tags.join(', ')}` : '';
-        showMessage(
-          `✅ Image uploaded successfully!\nPublic ID: ${data.publicId}\nMetadata: name="${data.name}"${tagsInfo}`,
-          'success'
-        );
-
-        // Reset form after 3 seconds
-        setTimeout(() => {
-          previewSection.classList.remove('active');
-          uploadSection.classList.add('active');
-          selectedFile = null;
-          fileInput.value = '';
-          resetMessage();
-        }, 3000);
+        currentFileIndex++;
+        processNextFile();
 
       } catch (error) {
         console.error('Upload error:', error);
+        currentItem = fileQueue[currentFileIndex];
+        currentItem.status = 'error';
+        uploadSummary.failed++;
+        uploadSummary.errors.push(`${currentItem.file.name}: ${error.message}`);
+        updateQueueDisplay();
+
         loading.classList.remove('active');
-        previewSection.classList.add('active');
-        submitBtn.disabled = false;
-        showMessage(`❌ Error: ${error.message}`, 'error');
+        currentFileIndex++;
+        processNextFile();
       }
+    });
+
+    skipCurrentBtn.addEventListener('click', () => {
+      uploadCurrentBtn.disabled = true;
+      skipCurrentBtn.disabled = true;
+
+      const currentItem = fileQueue[currentFileIndex];
+      currentItem.status = 'skipped';
+      uploadSummary.skipped++;
+      updateQueueDisplay();
+
+      currentFileIndex++;
+      processNextFile();
+    });
+
+    function processNextFile() {
+      if (currentFileIndex >= fileQueue.length) {
+        showUploadSummary();
+        return;
+      }
+
+      const currentItem = fileQueue[currentFileIndex];
+      currentItem.status = 'uploading';
+      updateQueueDisplay();
+
+      processingProgress.textContent = currentFileIndex + 1;
+      processingFileName.textContent = currentItem.file.name;
+      processingFileSize.textContent = (currentItem.file.size / 1024).toFixed(2) + ' KB';
+      processingImageName.value = currentItem.name;
+      processingOcrText.value = '';
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        processingImage.src = e.target.result;
+      };
+      reader.readAsDataURL(currentItem.file);
+
+      loading.classList.remove('active');
+      processingSection.classList.add('active');
+      uploadCurrentBtn.disabled = false;
+      skipCurrentBtn.disabled = false;
     }
+
+    function showUploadSummary() {
+      processingSection.classList.remove('active');
+      summarySection.classList.add('active');
+
+      let summaryHtml = `
+        <strong>✅ Upload Complete</strong><br><br>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+          <div style="text-align: center; padding: 10px; background: #d4edda; border-radius: 4px;">
+            <div style="font-size: 20px; font-weight: bold; color: #28a745;">${uploadSummary.success}</div>
+            <div style="font-size: 12px; color: #155724;">Uploaded</div>
+          </div>
+          <div style="text-align: center; padding: 10px; background: #fff3cd; border-radius: 4px;">
+            <div style="font-size: 20px; font-weight: bold; color: #856404;">${uploadSummary.skipped}</div>
+            <div style="font-size: 12px; color: #856404;">Skipped</div>
+          </div>
+          <div style="text-align: center; padding: 10px; background: #f8d7da; border-radius: 4px;">
+            <div style="font-size: 20px; font-weight: bold; color: #721c24;">${uploadSummary.failed}</div>
+            <div style="font-size: 12px; color: #721c24;">Failed</div>
+          </div>
+        </div>
+      `;
+
+      if (uploadSummary.errors.length > 0) {
+        summaryHtml += '<strong>Errors:</strong><br>';
+        uploadSummary.errors.forEach(err => {
+          summaryHtml += `<div style="color: #721c24; font-size: 12px; margin: 5px 0;">• ${err}</div>`;
+        });
+      }
+
+      summaryContent.innerHTML = summaryHtml;
+    }
+
+    uploadMoreBtn.addEventListener('click', () => {
+      summarySection.classList.remove('active');
+      uploadSection.classList.add('active');
+      fileQueue = [];
+      fileInput.value = '';
+      resetMessage();
+    });
 
     function showMessage(text, type) {
       message.textContent = text;
