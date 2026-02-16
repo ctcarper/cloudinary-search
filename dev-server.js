@@ -126,4 +126,23 @@ const server = http.createServer((req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-server.listen(port, () => console.log(`Dev server listening on http://localhost:${port}`));
+server.listen(port, () => {
+  console.log('\n╔══════════════════════════════════════════════════════════════════╗');
+  console.log('║          Dev Server Started - Available Routes                    ║');
+  console.log('╠══════════════════════════════════════════════════════════════════╣');
+  console.log(`║ Base URL: http://localhost:${port}`.padEnd(67) + '║');
+  console.log('╠══════════════════════════════════════════════════════════════════╣');
+  console.log('║ PAGES:                                                           ║');
+  console.log(`║  • http://localhost:${port}/          → Search Page             ║`);
+  console.log(`║  • http://localhost:${port}/search     → Search Page             ║`);
+  console.log(`║  • http://localhost:${port}/upload     → Bulk Uploader           ║`);
+  console.log(`║  • http://localhost:${port}/uploader   → Bulk Uploader           ║`);
+  console.log('╠══════════════════════════════════════════════════════════════════╣');
+  console.log('║ APIs:                                                            ║');
+  console.log(`║  • http://localhost:${port}/api/search  → Search API             ║`);
+  console.log(`║  • http://localhost:${port}/api/upload  → Upload API             ║`);
+  console.log('╠══════════════════════════════════════════════════════════════════╣');
+  console.log('║ Health Check:                                                    ║');
+  console.log(`║  • http://localhost:${port}/health    → API Status              ║`);
+  console.log('╚══════════════════════════════════════════════════════════════════╝\n');
+});
