@@ -222,7 +222,11 @@ function generateOCRTags(ocrText) {
       return /[a-zA-Z]/.test(tag);
     });
 
-  return tags;
+  // Deduplicate tags (case-insensitive)
+  const uniqueTags = Array.from(new Set(tags.map(tag => tag.toLowerCase())))
+    .map(lowerTag => tags.find(t => t.toLowerCase() === lowerTag)); // Preserve original casing
+  
+  return uniqueTags;
 }
 
 // Update asset tags with OCR data
