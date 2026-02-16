@@ -1,0 +1,94 @@
+const btoa = (str) => Buffer.from(str).toString('base64');
+
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+  const API_KEY = process.env.CLOUDINARY_API_KEY;
+  const API_SECRET = process.env.CLOUDINARY_API_SECRET;
+
+  if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+    return res.status(500).json({ error: 'Missing Cloudinary environment variables.' });
+  }
+
+  const getParam = (name) => {
+    if (req.method === 'GET') return req.query[name];
+    if (req.method === 'POST') return (req.body && req.body[name]) || undefined;
+    return undefined;
+  };
+
+  const q = (getParam('q') || '').toString().trim();
+  const next_cursor = (getParam('next_cursor') || '').toString().trim() || undefined;
+  const max_results = Math.min(parseInt(getParam('max_results')) || 30, 100); // Default 30, max 100
+
+  const escapePhrase = (s) => s.replace(/"/g, '\\"');
+
+  let expression;
+  if (!q) {
+    expression = '(resource_type:image OR resource_type:video)';
+  } else {
+    const esc = escapePhrase(q);
+    // Search only on tags
+    expression = `(resource_type:image OR resource_type:video) AND tags:"${esc}"`;
+  }
+
+  const body = {
+    expression,
+    max_results: max_results,
+  };
+  if (next_cursor) body.next_cursor = next_cursor;
+
+  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/search`;
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`${API_KEY}:${API_SECRET}`)}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.status(resp.status).json({ error: 'Cloudinary error', detail: text });
+    }
+
+    const data = await resp.json();
+
+    const safeResults = (data.resources || []).map(r => ({
+      asset_id: r.asset_id,
+      public_id: r.public_id,
+      secure_url: r.secure_url || r.url,
+      width: r.width,
+      height: r.height,
+      format: r.format,
+      resource_type: r.resource_type,
+      created_at: r.created_at,
+      tags: r.tags || [],
+      bytes: r.bytes,
+      duration: r.duration,
+      type: r.type,
+      metadata: r.metadata || {},
+      context: r.context || {},
+      alt: r.context?.alt || null,
+      caption: r.context?.caption || null,
+      description: r.context?.raw_description || null
+    }));
+
+    return res.status(200).json({
+      results: safeResults,
+      next_cursor: data.next_cursor,
+      total_count: data.total_count || safeResults.length
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Request failed', detail: err.message });
+  }
+};

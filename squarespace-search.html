@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudinary Search</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+    }
+
+    .search-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .search-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .search-header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .search-header p {
+      color: #666;
+      font-size: 1rem;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 250px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      transition: border-color 0.3s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
+    .search-btn {
+      padding: 12px 24px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .search-btn:hover {
+      background-color: #45a049;
+    }
+
+    .search-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      display: none;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .error {
+      background-color: #fee;
+      border: 1px solid #fcc;
+      color: #c00;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error.active {
+      display: block;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .gallery-item {
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      position: relative;
+      aspect-ratio: 1;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: #f5f5f5;
+    }
+
+    .gallery-item-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+      padding: 12px;
+      color: white;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .gallery-item:hover .gallery-item-info {
+      opacity: 1;
+    }
+
+    .gallery-item-title {
+      font-weight: 600;
+      color: white;
+      margin-bottom: 4px;
+      word-break: break-word;
+      font-size: 0.9rem;
+    }
+
+    .gallery-item-meta {
+      font-size: 0.8rem;
+      color: #ccc;
+      margin-bottom: 6px;
+    }
+
+    .gallery-item-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag {
+      background-color: rgba(255,255,255,0.3);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .pagination-btn {
+      padding: 10px 16px;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background-color: #e0e0e0;
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    .results-count {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+      .search-header h1 {
+        font-size: 1.8rem;
+      }
+
+      .search-form {
+        flex-direction: column;
+      }
+
+      .search-input {
+        min-width: 100%;
+      }
+
+      .gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      position: relative;
+      max-width: 90%;
+      max-height: 90vh;
+      background-color: white;
+      border-radius: 8px;
+      overflow: auto;
+      box-shadow: 0 4px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      background-color: rgba(0, 0, 0, 0.9);
+    }
+
+    .modal-image {
+      max-width: 100%;
+      max-height: 60vh;
+      display: block;
+      object-fit: contain;
+    }
+
+    .modal-video {
+      max-width: 100%;
+      max-height: 60vh;
+      display: block;
+    }
+
+    .gallery-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      z-index: 10;
+    }
+
+    .modal-info {
+      padding: 20px;
+      background-color: #f9f9f9;
+      border-top: 1px solid #eee;
+    }
+
+    .modal-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+
+    .modal-meta {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .modal-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .modal-tag {
+      background-color: #e0e0e0;
+      color: #333;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="search-container">
+    <div class="search-header">
+      <h1>Search Gallery</h1>
+      <p>Find images by tag</p>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <form class="search-form" id="searchForm">
+      <input
+        type="text"
+        class="search-input"
+        id="searchInput"
+        placeholder="Enter tag name..."
+        autocomplete="off"
+      >
+      <button type="submit" class="search-btn" id="searchBtn">Search</button>
+      <button type="button" class="search-btn" id="compositesBtn" style="background-color: #2196F3;">Show Composites</button>
+    </form>
+
+    <div class="loading" id="loading">Loading results...</div>
+    <div class="results-count" id="resultsCount"></div>
+
+    <div class="gallery" id="gallery"></div>
+
+    <div class="pagination" id="pagination"></div>
+
+    <div class="modal" id="modal">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div id="modalMediaContainer">
+          <img id="modalImage" class="modal-image" src="" alt="" style="display:none;">
+          <video id="modalVideo" class="modal-video" controls style="display:none;"></video>
+        </div>
+        <div class="modal-info">
+          <div class="modal-title" id="modalTitle"></div>
+          <div class="modal-meta" id="modalMeta"></div>
+          <div class="modal-tags" id="modalTags"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = `${window.location.origin}/api/search`;
+    
+    let currentQuery = '';
+    let currentCursor = null;
+    let nextCursor = null;
+    let totalCount = 0;
+    let searchHistory = [];
+
+    const elements = {
+      searchForm: document.getElementById('searchForm'),
+      searchInput: document.getElementById('searchInput'),
+      searchBtn: document.getElementById('searchBtn'),
+      gallery: document.getElementById('gallery'),
+      loading: document.getElementById('loading'),
+      error: document.getElementById('error'),
+      pagination: document.getElementById('pagination'),
+      resultsCount: document.getElementById('resultsCount')
+    };
+
+    function showError(message) {
+      elements.error.textContent = message;
+      elements.error.classList.add('active');
+      setTimeout(() => {
+        elements.error.classList.remove('active');
+      }, 5000);
+    }
+
+    function showLoading(show = true) {
+      if (show) {
+        elements.loading.classList.add('active');
+        elements.gallery.innerHTML = '';
+        elements.pagination.innerHTML = '';
+      } else {
+        elements.loading.classList.remove('active');
+      }
+    }
+
+    async function fetchResults(query, cursor = null, maxResults = null) {
+      showLoading(true);
+      
+      try {
+        const params = new URLSearchParams();
+        if (query) params.append('q', query);
+        if (cursor) params.append('next_cursor', cursor);
+        if (maxResults) params.append('max_results', maxResults);
+
+        const response = await fetch(`${API_URL}?${params.toString()}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Search failed');
+        }
+
+        const data = await response.json();
+        displayResults(data);
+        showLoading(false);
+      } catch (err) {
+        showError(`Error: ${err.message}`);
+        showLoading(false);
+      }
+    }
+
+    function displayResults(data) {
+      const { results = [], next_cursor, total_count } = data;
+      
+      totalCount = total_count || 0;
+      nextCursor = next_cursor;
+
+      if (results.length === 0) {
+        elements.gallery.innerHTML = '<div class="no-results">No results found. Try a different search term.</div>';
+        elements.resultsCount.textContent = '';
+        elements.pagination.innerHTML = '';
+        return;
+      }
+
+      elements.resultsCount.textContent = `Showing results for "${currentQuery}" (${results.length} of ${totalCount})`;
+
+      elements.gallery.innerHTML = results.map(item => {
+        const isVideo = item.resource_type === 'video';
+        const thumbUrl = isVideo ? `${item.secure_url}.jpg` : item.secure_url;
+        return `
+        <div class="gallery-item" onclick="openModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+          <img src="${thumbUrl}" alt="${item.public_id}" loading="lazy">
+          ${isVideo ? '<div class="gallery-badge">🎥 Video</div>' : ''}
+          <div class="gallery-item-info">
+            <div class="gallery-item-title">${escapeHtml(item.public_id)}</div>
+            <div class="gallery-item-meta">${item.width}x${item.height} • ${item.format}</div>
+            ${item.tags && item.tags.length > 0 ? `
+              <div class="gallery-item-tags">
+                ${item.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+      }).join('');
+
+      renderPagination();
+    }
+
+    function renderPagination() {
+      const buttons = [];
+
+      if (searchHistory.length > 0) {
+        buttons.push(`<button type="button" class="pagination-btn" onclick="goToPreviousPage()">← Previous</button>`);
+      }
+
+      if (nextCursor) {
+        buttons.push(`<button type="button" class="pagination-btn" onclick="goToNextPage()">Next →</button>`);
+      }
+
+      elements.pagination.innerHTML = buttons.join('');
+    }
+
+    function goToNextPage() {
+      if (nextCursor) {
+        searchHistory.push(currentCursor);
+        currentCursor = nextCursor;
+        fetchResults(currentQuery, currentCursor);
+      }
+    }
+
+    function goToPreviousPage() {
+      if (searchHistory.length > 0) {
+        currentCursor = searchHistory.pop();
+        fetchResults(currentQuery, currentCursor);
+      }
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function openModal(item) {
+      const isVideo = item.resource_type === 'video';
+      
+      // Hide both and show the appropriate one
+      document.getElementById('modalImage').style.display = 'none';
+      document.getElementById('modalVideo').style.display = 'none';
+      
+      if (isVideo) {
+        document.getElementById('modalVideo').src = item.secure_url;
+        document.getElementById('modalVideo').style.display = 'block';
+      } else {
+        document.getElementById('modalImage').src = item.secure_url;
+        document.getElementById('modalImage').style.display = 'block';
+      }
+      
+      document.getElementById('modalTitle').textContent = item.public_id;
+      
+      let metaHtml = `${item.width}×${item.height} • ${item.format}`;
+      if (isVideo && item.duration) metaHtml += ` • ${Math.round(item.duration)}s`;
+      if (item.alt) metaHtml += ` • Alt: ${escapeHtml(item.alt)}`;
+      if (item.caption) metaHtml += ` • Caption: ${escapeHtml(item.caption)}`;
+      if (item.created_at) metaHtml += ` • Created: ${new Date(item.created_at).toLocaleDateString()}`;
+      document.getElementById('modalMeta').innerHTML = metaHtml;
+      
+      let tagsHtml = '';
+      if (item.tags && item.tags.length > 0) {
+        tagsHtml += `<strong>Tags:</strong><br>`;
+        tagsHtml += item.tags.map(tag => `<span class="modal-tag">${escapeHtml(tag)}</span>`).join('');
+      }
+      if (item.description) {
+        tagsHtml += `<br><strong>Description:</strong><br><span class="modal-tag">${escapeHtml(item.description)}</span>`;
+      }
+      if (item.metadata && Object.keys(item.metadata).length > 0) {
+        tagsHtml += `<br><strong>Metadata:</strong><br>`;
+        for (const [key, value] of Object.entries(item.metadata)) {
+          tagsHtml += `<span class="modal-tag">${escapeHtml(key)}: ${escapeHtml(JSON.stringify(value))}</span>`;
+        }
+      }
+      document.getElementById('modalTags').innerHTML = tagsHtml || '<em>No tags or metadata</em>';
+      
+      document.getElementById('modal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+    }
+
+    // Close modal when clicking outside the content
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('modal');
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    elements.searchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      currentQuery = elements.searchInput.value.trim();
+      
+      if (!currentQuery) {
+        showError('Please enter a search term');
+        return;
+      }
+
+      currentCursor = null;
+      searchHistory = [];
+      fetchResults(currentQuery);
+    });
+
+    // Optional: Perform search on Enter key
+    elements.searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        elements.searchForm.dispatchEvent(new Event('submit'));
+      }
+    });
+
+    // Show composites button handler
+    document.getElementById('compositesBtn').addEventListener('click', () => {
+      currentQuery = 'composite';
+      elements.searchInput.value = 'composite';
+      currentCursor = null;
+      searchHistory = [];
+      fetchResults('composite', null, 100);
+    });
+
+    // Show initial message (no auto-load)
+    window.addEventListener('load', () => {
+      elements.gallery.innerHTML = '<div class="no-results">Enter a search term to find images</div>';
+    });
+  </script>
+</body>
+</html>

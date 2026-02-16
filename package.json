@@ -1,0 +1,17 @@
+{
+  "name": "vercel-cloudinary-search",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node dev-server.js"
+  },
+  "dependencies": {
+    "cloudinary": "^2.9.0",
+    "dotenv": "^16.0.0",
+    "form-data": "^4.0.0",
+    "formidable": "^2.1.2"
+  }
+}

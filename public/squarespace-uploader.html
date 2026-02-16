@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Uploader with OCR</title>
+  <script src="https://cdn.jsdelivr.net/npm/piexifjs@0.0.8/piexif.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+      font-size: 28px;
+    }
+
+    .upload-section {
+      display: none;
+    }
+
+    .upload-section.active {
+      display: block;
+    }
+
+    .dropzone {
+      border: 3px dashed #667eea;
+      border-radius: 8px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f8f9ff;
+    }
+
+    .dropzone:hover {
+      border-color: #764ba2;
+      background: #ede9ff;
+    }
+
+    .dropzone.dragover {
+      border-color: #764ba2;
+      background: #ede9ff;
+      transform: scale(1.02);
+    }
+
+    .dropzone-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .dropzone-text {
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .dropzone-hint {
+      color: #999;
+      font-size: 14px;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .preview-section {
+      margin-top: 30px;
+      display: none;
+    }
+
+    .preview-section.active {
+      display: block;
+    }
+
+    .preview-image {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 150px;
+      resize: vertical;
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-upload {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-upload:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-upload:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-cancel:hover {
+      background: #d0d0d0;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .message.active {
+      display: block;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .hint-text {
+      color: #666;
+      font-size: 12px;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    .file-info {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📸 Image Uploader</h1>
+
+    <div id="message" class="message"></div>
+
+    <!-- Upload Section -->
+    <div id="uploadSection" class="upload-section active">
+      <div class="dropzone" id="dropzone">
+        <div class="dropzone-icon">📁</div>
+        <div class="dropzone-text">Drag and drop your image here</div>
+        <div class="dropzone-hint">or click to select a file</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <!-- Preview & Metadata Section -->
+    <div id="previewSection" class="preview-section">
+      <img id="previewImage" class="preview-image" alt="Preview">
+      
+      <div class="file-info">
+        <strong>File:</strong> <span id="fileName"></span><br>
+        <strong>Size:</strong> <span id="fileSize"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="ocrText">OCR Text (extracted from image)</label>
+        <textarea id="ocrText" readonly placeholder="Text will appear here after upload..."></textarea>
+        <div class="hint-text">ℹ️ Will be populated after upload processing</div>
+      </div>
+
+      <div class="form-group">
+        <label for="imageName">Image Name *</label>
+        <input type="text" id="imageName" placeholder="e.g., Sample Image Name" required>
+        <div class="hint-text">This will be stored in image metadata</div>
+      </div>
+
+      <div class="form-group">
+        <label for="tapYear">Tap Year</label>
+        <input type="text" id="tapYear" placeholder="Auto-detected from image date" readonly>
+        <div class="hint-text">ℹ️ Automatically extracted from image EXIF data (photo date)</div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-upload" id="submitBtn">Upload Image</button>
+        <button class="btn-cancel" id="cancelBtn">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Loading Section -->
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <div id="loadingText">Processing your image...</div>
+    </div>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadSection = document.getElementById('uploadSection');
+    const previewSection = document.getElementById('previewSection');
+    const loading = document.getElementById('loading');
+    const previewImage = document.getElementById('previewImage');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const imageName = document.getElementById('imageName');
+    const tapYear = document.getElementById('tapYear');
+    const ocrText = document.getElementById('ocrText');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const message = document.getElementById('message');
+    const loadingText = document.getElementById('loadingText');
+
+    let selectedFile = null;
+
+    // Dropzone listeners
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    function handleFile(file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showMessage('Please select an image file', 'error');
+        return;
+      }
+
+      selectedFile = file;
+
+      // Display preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        fileName.textContent = file.name;
+        fileSize.textContent = (file.size / 1024).toFixed(2) + ' KB';
+        
+        // Extract EXIF data
+        extractYearFromImage(file);
+      };
+      reader.readAsDataURL(file);
+
+      // Show preview section
+      uploadSection.classList.remove('active');
+      previewSection.classList.add('active');
+      ocrText.value = '';
+      imageName.value = '';
+      tapYear.value = '';
+
+      // Auto-extract name from filename
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+      imageName.value = nameWithoutExt;
+    }
+
+    // Extract year from image EXIF data
+    function extractYearFromImage(file) {
+      const fileReader = new FileReader();
+      fileReader.onload = (e) => {
+        try {
+          const exifData = piexif.load(e.target.result);
+          
+          // Try to get DateTimeOriginal (preferred for photos)
+          let dateString = null;
+          
+          if (exifData.Exif && exifData.Exif[piexif.ExifIFD.DateTimeOriginal]) {
+            dateString = exifData.Exif[piexif.ExifIFD.DateTimeOriginal];
+          } 
+          // Fallback to DateTime
+          else if (exifData['0th'] && exifData['0th'][piexif.ImageIFD.DateTime]) {
+            dateString = exifData['0th'][piexif.ImageIFD.DateTime];
+          }
+          
+          // Parse datetime string (format: "YYYY:MM:DD HH:MM:SS")
+          if (dateString) {
+            const year = dateString.toString().split(':')[0];
+            if (year && year.length === 4) {
+              tapYear.value = year;
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('Could not extract EXIF data:', error.message);
+        }
+        
+        // Fallback: Use file's lastModified date
+        const fileDate = new Date(file.lastModified);
+        tapYear.value = fileDate.getFullYear().toString();
+      };
+      
+      fileReader.readAsArrayBuffer(file);
+    }
+
+    cancelBtn.addEventListener('click', () => {
+      previewSection.classList.remove('active');
+      uploadSection.classList.add('active');
+      selectedFile = null;
+      fileInput.value = '';
+      resetMessage();
+    });
+
+    submitBtn.addEventListener('click', async () => {
+      // Validate inputs
+      if (!imageName.value.trim()) {
+        showMessage('Please enter an image name', 'error');
+        return;
+      }
+      if (!tapYear.value.trim()) {
+        showMessage('Tap Year could not be detected. Please ensure the image has date metadata or check file properties.', 'error');
+        return;
+      }
+      if (!selectedFile) {
+        showMessage('No file selected', 'error');
+        return;
+      }
+
+      await uploadImage();
+    });
+
+    async function uploadImage() {
+      try {
+        // Show loading
+        previewSection.classList.remove('active');
+        loading.classList.add('active');
+        loadingText.textContent = 'Uploading and processing with OCR...';
+        submitBtn.disabled = true;
+
+        // Create FormData
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('name', imageName.value.trim());
+        formData.append('tapYear', tapYear.value.trim());
+
+        console.log('Sending upload request to /api/upload');
+        console.log('File name:', selectedFile.name);
+        console.log('Image name:', imageName.value.trim());
+        console.log('Tap year:', tapYear.value.trim());
+
+        // Call upload endpoint
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', {
+          contentType: response.headers.get('content-type'),
+          contentLength: response.headers.get('content-length')
+        });
+
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          let errorMessage = `Upload failed (${response.status})`;
+          
+          try {
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorMessage;
+            } else {
+              const errorText = await response.text();
+              errorMessage = errorText || errorMessage;
+            }
+          } catch (e) {
+            console.error('Error parsing error response:', e);
+            errorMessage = `Server error (${response.status}): Check console logs`;
+          }
+          
+          throw new Error(errorMessage);
+        }
+
+        let data;
+        try {
+          const responseText = await response.text();
+          console.log('Response body length:', responseText.length);
+          console.log('Response body (first 200 chars):', responseText.substring(0, 200));
+          
+          if (!responseText) {
+            throw new Error('Empty response from server');
+          }
+          
+          data = JSON.parse(responseText);
+        } catch (e) {
+          console.error('JSON parse error:', e.message);
+          throw new Error('Server returned invalid response: ' + e.message);
+        }
+
+        console.log('Parsed response:', data);
+
+        // Populate OCR text
+        ocrText.value = data.ocrText || 'No text detected';
+
+        // Show success
+        loading.classList.remove('active');
+        previewSection.classList.add('active');
+        submitBtn.disabled = false;
+
+        showMessage(
+          `✅ Image uploaded successfully!\nPublic ID: ${data.publicId}\nMetadata: name="${data.name}", tapYear="${data.tapYear}"`,
+          'success'
+        );
+
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          previewSection.classList.remove('active');
+          uploadSection.classList.add('active');
+          selectedFile = null;
+          fileInput.value = '';
+          resetMessage();
+        }, 3000);
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        loading.classList.remove('active');
+        previewSection.classList.add('active');
+        submitBtn.disabled = false;
+        showMessage(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message active ${type}`;
+    }
+
+    function resetMessage() {
+      message.className = 'message';
+      message.textContent = '';
+    }
+  </script>
+</body>
+</html>

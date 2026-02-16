@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/uploader"
+    },
+    {
+      "source": "/uploader",
+      "destination": "/api/uploader"
+    }
+  ]
+}
