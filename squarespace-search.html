@@ -396,7 +396,9 @@
   </div>
 
   <script>
-    const API_URL = `${window.location.origin}/api/search`;
+    const API_URL = window.location.hostname === 'localhost' 
+      ? `${window.location.origin}/api/search`
+      : `https://cloudinary-search.vercel.app/api/search`;
     
     let currentQuery = '';
     let currentCursor = null;
