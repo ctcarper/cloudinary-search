@@ -450,7 +450,7 @@
           // Add root folder option
           const rootOption = document.createElement('option');
           rootOption.value = '';
-          rootOption.textContent = 'Root Folder';
+          rootOption.textContent = '📁 Root Folder';
           folderSelect.appendChild(rootOption);
           
           // Add other folders
@@ -458,17 +458,25 @@
             if (folderPath) { // Skip empty strings (already added as root)
               const option = document.createElement('option');
               option.value = folderPath;
-              // Format folder path for display (last part of path)
-              const displayName = folderPath.split('/').pop();
+              // Format folder path for display with indentation for subfolders
+              const parts = folderPath.split('/');
+              const indent = '&nbsp;&nbsp;'.repeat(parts.length - 1);
+              const displayName = parts[parts.length - 1];
               option.textContent = displayName || folderPath;
+              option.value = folderPath;
               folderSelect.appendChild(option);
             }
           });
+          
+          console.log(`Loaded ${data.folders.length} folders`);
+        } else {
+          console.warn('No folders in response:', data);
+          folderSelect.innerHTML = '<option value="">Root Folder</option>';
         }
       } catch (error) {
         console.error('Error loading folders:', error);
         // Set fallback option if fetch fails
-        folderSelect.innerHTML = '<option value="">Root Folder (error loading folders)</option>';
+        folderSelect.innerHTML = '<option value="">Root Folder (error loading)</option>';
       }
     }
 
