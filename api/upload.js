@@ -114,9 +114,12 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     // Only add OCR for images
     if (metadata.isImage) {
       options.ocr = 'adv_ocr';
+    } else if (metadata.isAudio) {
+      // For audio files, explicitly set resource_type to audio
+      options.resource_type = 'audio';
     } else {
-      // For audio and video files, explicitly set resource_type to auto
-      options.resource_type = 'auto';
+      // For video files, explicitly set resource_type to video
+      options.resource_type = 'video';
     }
 
     // Add folder if specified
@@ -333,11 +336,13 @@ module.exports = async (req, res) => {
     const tapYear = Array.isArray(fields.tapYear) ? fields.tapYear[0] : (fields.tapYear || null);
     const folder = Array.isArray(fields.folder) ? fields.folder[0] : (fields.folder || null);
     
-    // Detect if file is an image based on MIME type
+    // Detect file type based on MIME type
     const mimeType = file.mimetype || '';
     const isImage = mimeType.startsWith('image/');
+    const isAudio = mimeType.startsWith('audio/');
     console.log('File MIME type:', mimeType);
     console.log('Is image:', isImage);
+    console.log('Is audio:', isAudio);
 
     console.log('Metadata:', { imageName, tapYear, folder, isImage });
 
@@ -360,7 +365,7 @@ module.exports = async (req, res) => {
     const cloudinaryResponse = await uploadToCloudinary(
       tempFilePath,
       filename,
-      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage }
+      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage, isAudio: isAudio }
     );
 
     console.log('Cloudinary upload complete. Response keys:', Object.keys(cloudinaryResponse));
