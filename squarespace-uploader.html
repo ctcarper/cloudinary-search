@@ -321,7 +321,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>📸 Bulk Image Uploader</h1>
+    <h1>📸 Bulk Media Uploader</h1>
 
     <div id="message" class="message"></div>
 
@@ -329,10 +329,10 @@
     <div id="uploadSection" class="upload-section active">
       <div class="dropzone" id="dropzone">
         <div class="dropzone-icon">📁</div>
-        <div class="dropzone-text">Drag and drop your images here</div>
-        <div class="dropzone-hint">or click to select multiple files</div>
+        <div class="dropzone-text">Drag and drop your files here</div>
+        <div class="dropzone-hint">Images, videos, and audio files supported</div>
       </div>
-      <input type="file" id="fileInput" accept="image/*" multiple>
+      <input type="file" id="fileInput" accept="image/*,video/*,audio/*" multiple>
     </div>
 
     <!-- Queue Section -->
@@ -351,18 +351,21 @@
 
     <!-- Current File Processing Section -->
     <div id="processingSection" class="preview-section">
-      <img id="processingImage" class="preview-image" alt="Preview">
+      <img id="processingImage" class="preview-image" alt="Preview" style="display: none;">
+      <video id="processingVideo" class="preview-image" controls style="display: none;"></video>
+      <audio id="processingAudio" controls style="width: 100%; margin-bottom: 20px; display: none;"></audio>
       
       <div class="file-info">
         <strong>File:</strong> <span id="processingFileName"></span><br>
         <strong>Size:</strong> <span id="processingFileSize"></span><br>
+        <strong>Type:</strong> <span id="processingFileType"></span><br>
         <strong>Progress:</strong> <span id="processingProgress">0</span> of <span id="totalToProcess">0</span>
       </div>
 
       <div class="form-group">
-        <label for="processingImageName">Image Name *</label>
-        <input type="text" id="processingImageName" placeholder="e.g., Sample Image Name" required>
-        <div class="hint-text">This will be stored in image metadata and as OCR tags</div>
+        <label for="processingMediaName">Media Name *</label>
+        <input type="text" id="processingMediaName" placeholder="e.g., Sample Media Name" required>
+        <div class="hint-text">This will be stored in media metadata</div>
       </div>
 
       <div class="form-group">
@@ -370,13 +373,13 @@
         <select id="folderSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">
           <option value="">Loading folders...</option>
         </select>
-        <div class="hint-text">Select which folder to upload this image to</div>
+        <div class="hint-text">Select which folder to upload this media to</div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" id="ocrSection" style="display: none;">
         <label for="processingOcrText">OCR Text (extracted from image)</label>
         <textarea id="processingOcrText" readonly placeholder="Text will appear here after upload..."></textarea>
-        <div class="hint-text">ℹ️ Will be converted to searchable tags (ocr_ prefix)</div>
+        <div class="hint-text">ℹ️ Will be converted to searchable tags</div>
       </div>
 
       <div class="button-group">
@@ -417,13 +420,17 @@
     const fileQueueDiv = document.getElementById('fileQueue');
     const queueCount = document.getElementById('queueCount');
     const processingImage = document.getElementById('processingImage');
+    const processingVideo = document.getElementById('processingVideo');
+    const processingAudio = document.getElementById('processingAudio');
     const processingFileName = document.getElementById('processingFileName');
     const processingFileSize = document.getElementById('processingFileSize');
-    const processingImageName = document.getElementById('processingImageName');
+    const processingFileType = document.getElementById('processingFileType');
+    const processingMediaName = document.getElementById('processingMediaName');
     const processingOcrText = document.getElementById('processingOcrText');
     const processingProgress = document.getElementById('processingProgress');
     const totalToProcess = document.getElementById('totalToProcess');
     const folderSelect = document.getElementById('folderSelect');
+    const ocrSection = document.getElementById('ocrSection');
     const message = document.getElementById('message');
     const loadingText = document.getElementById('loadingText');
     const summaryContent = document.getElementById('summaryContent');
@@ -515,17 +522,22 @@
     });
 
     function addFilestoQueue(files) {
-      const validFiles = files.filter(f => f.type.startsWith('image/'));
+      const validFiles = files.filter(f => {
+        return f.type.startsWith('image/') || 
+               f.type.startsWith('video/') || 
+               f.type.startsWith('audio/');
+      });
       
       if (validFiles.length === 0) {
-        showMessage('Please select image files only', 'error');
+        showMessage('Please select image, video, or audio files only', 'error');
         return;
       }
 
       fileQueue = validFiles.map(file => ({
         file,
         name: file.name.replace(/\.[^/.]+$/, ''),
-        status: 'pending'
+        status: 'pending',
+        type: file.type.split('/')[0] // 'image', 'video', or 'audio'
       }));
 
       updateQueueDisplay();
@@ -566,8 +578,8 @@
     });
 
     uploadCurrentBtn.addEventListener('click', async () => {
-      if (!processingImageName.value.trim()) {
-        showMessage('Please enter an image name', 'error');
+      if (!processingMediaName.value.trim()) {
+        showMessage('Please enter a media name', 'error');
         return;
       }
 
@@ -577,12 +589,24 @@
       try {
         processingSection.classList.remove('active');
         loading.classList.add('active');
-        loadingText.textContent = 'Uploading and processing with OCR...';
 
         const currentItem = fileQueue[currentFileIndex];
+        
+        // Set loading text based on media type
+        if (currentItem.type === 'image') {
+          loadingText.textContent = 'Uploading and processing with OCR...';
+        } else {
+          loadingText.textContent = `Uploading ${currentItem.type}...`;
+        }
+
         const formData = new FormData();
         formData.append('file', currentItem.file);
-        formData.append('name', processingImageName.value.trim());
+        formData.append('name', processingMediaName.value.trim());
+        
+        // Only include OCR text for images
+        if (currentItem.type === 'image' && processingOcrText.value.trim()) {
+          formData.append('ocrText', processingOcrText.value.trim());
+        }
         
         // Add selected folder if one is chosen
         if (folderSelect.value) {
@@ -669,12 +693,37 @@
       processingProgress.textContent = currentFileIndex + 1;
       processingFileName.textContent = currentItem.file.name;
       processingFileSize.textContent = (currentItem.file.size / 1024).toFixed(2) + ' KB';
-      processingImageName.value = currentItem.name;
+      processingFileType.textContent = currentItem.type;
+      processingMediaName.value = currentItem.name;
       processingOcrText.value = '';
+
+      // Hide all preview elements
+      processingImage.style.display = 'none';
+      processingVideo.style.display = 'none';
+      processingAudio.style.display = 'none';
+
+      // Hide OCR section for non-images
+      if (currentItem.type === 'image') {
+        ocrSection.style.display = 'block';
+        processingImage.style.display = 'block';
+      } else {
+        ocrSection.style.display = 'none';
+        if (currentItem.type === 'video') {
+          processingVideo.style.display = 'block';
+        } else if (currentItem.type === 'audio') {
+          processingAudio.style.display = 'block';
+        }
+      }
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        processingImage.src = e.target.result;
+        if (currentItem.type === 'image') {
+          processingImage.src = e.target.result;
+        } else if (currentItem.type === 'video') {
+          processingVideo.src = e.target.result;
+        } else if (currentItem.type === 'audio') {
+          processingAudio.src = e.target.result;
+        }
       };
       reader.readAsDataURL(currentItem.file);
 

@@ -105,13 +105,16 @@ async function uploadToCloudinary(filePath, filename, metadata) {
 
   try {
     const options = {
-      ocr: 'adv_ocr',
       context: contextStr,
       public_id: publicId,
-      resource_type: 'image',
       // Add tags for metadata (visible in Cloudinary Tags UI)
       tags: [metadata.name].filter(tag => tag) // Only include name, not tapYear
     };
+
+    // Only add OCR for images
+    if (metadata.isImage) {
+      options.ocr = 'adv_ocr';
+    }
 
     // Add folder if specified
     if (metadata.folder) {
@@ -121,6 +124,7 @@ async function uploadToCloudinary(filePath, filename, metadata) {
 
     console.log('Upload options:', JSON.stringify(options, null, 2));
     console.log('Tags being sent:', options.tags);
+    console.log('Media type: ' + (metadata.isImage ? 'image' : 'video/audio'));
     console.log('Calling cloudinary.uploader.upload...');
 
     const response = await cloudinary.uploader.upload(filePath, options);
@@ -325,8 +329,14 @@ module.exports = async (req, res) => {
     const imageName = Array.isArray(fields.name) ? fields.name[0] : fields.name;
     const tapYear = Array.isArray(fields.tapYear) ? fields.tapYear[0] : (fields.tapYear || null);
     const folder = Array.isArray(fields.folder) ? fields.folder[0] : (fields.folder || null);
+    
+    // Detect if file is an image based on MIME type
+    const mimeType = file.mimetype || '';
+    const isImage = mimeType.startsWith('image/');
+    console.log('File MIME type:', mimeType);
+    console.log('Is image:', isImage);
 
-    console.log('Metadata:', { imageName, tapYear, folder });
+    console.log('Metadata:', { imageName, tapYear, folder, isImage });
 
     if (!imageName) {
       console.log('Missing metadata: name is required');
@@ -347,18 +357,22 @@ module.exports = async (req, res) => {
     const cloudinaryResponse = await uploadToCloudinary(
       tempFilePath,
       filename,
-      { name: imageName, tapYear: tapYear, folder: folder }
+      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage }
     );
 
     console.log('Cloudinary upload complete. Response keys:', Object.keys(cloudinaryResponse));
 
-    // Extract OCR text
-    const ocrText = extractOCRText(cloudinaryResponse);
-    
-    // Add OCR text as tags to the asset
-    if (ocrText) {
-      console.log('Updating asset with OCR tags...');
-      await updateAssetWithOCRTags(cloudinary, cloudinaryResponse.public_id, ocrText);
+    // Extract OCR text and update tags (only for images)
+    let ocrText = '';
+    if (isImage) {
+      ocrText = extractOCRText(cloudinaryResponse);
+      
+      if (ocrText) {
+        console.log('Updating asset with OCR tags...');
+        await updateAssetWithOCRTags(cloudinary, cloudinaryResponse.public_id, ocrText);
+      }
+    } else {
+      console.log('Skipping OCR processing for non-image file');
     }
 
     console.log('Preparing success response...');
