@@ -369,6 +369,30 @@
     <div id="processingSection" class="preview-section">
       <img id="processingImage" class="preview-image" alt="Preview" style="display: none;">
       <video id="processingVideo" class="preview-image" controls style="display: none;"></video>
+      
+      <div id="audioPlaceholder" style="display: none; text-align: center; margin-bottom: 20px;">
+        <svg width="120" height="120" viewBox="0 0 120 120" style="margin: 20px auto; display: block;">
+          <!-- Speaker/Music Icon -->
+          <circle cx="60" cy="60" r="55" fill="none" stroke="#667eea" stroke-width="2"/>
+          <circle cx="60" cy="60" r="50" fill="#f8f9ff"/>
+          
+          <!-- Music note elements -->
+          <g transform="translate(35, 35)">
+            <!-- First note -->
+            <ellipse cx="10" cy="35" rx="6" ry="8" fill="#667eea"/>
+            <line x1="16" y1="10" x2="16" y2="35" stroke="#667eea" stroke-width="2"/>
+            
+            <!-- Second note -->
+            <ellipse cx="30" cy="30" rx="6" ry="8" fill="#764ba2"/>
+            <line x1="36" y1="5" x2="36" y2="30" stroke="#764ba2" stroke-width="2"/>
+            
+            <!-- Connecting line -->
+            <path d="M 16 10 Q 26 5 36 5" stroke="#667eea" stroke-width="2" fill="none"/>
+          </g>
+        </svg>
+        <div style="color: #666; font-size: 14px; font-weight: 600;">🎵 Audio File</div>
+      </div>
+      
       <audio id="processingAudio" controls style="width: 100%; margin-bottom: 20px; display: none;"></audio>
       
       <div class="file-info">
@@ -438,6 +462,7 @@
     const processingImage = document.getElementById('processingImage');
     const processingVideo = document.getElementById('processingVideo');
     const processingAudio = document.getElementById('processingAudio');
+    const audioPlaceholder = document.getElementById('audioPlaceholder');
     const processingFileName = document.getElementById('processingFileName');
     const processingFileSize = document.getElementById('processingFileSize');
     const processingFileType = document.getElementById('processingFileType');
@@ -750,6 +775,7 @@
       processingImage.style.display = 'none';
       processingVideo.style.display = 'none';
       processingAudio.style.display = 'none';
+      audioPlaceholder.style.display = 'none';
 
       // Hide OCR section for non-images
       if (currentItem.type === 'image') {
@@ -760,6 +786,7 @@
         if (currentItem.type === 'video') {
           processingVideo.style.display = 'block';
         } else if (currentItem.type === 'audio') {
+          audioPlaceholder.style.display = 'block';
           processingAudio.style.display = 'block';
         }
       }

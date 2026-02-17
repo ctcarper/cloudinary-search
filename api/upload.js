@@ -120,12 +120,17 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       tags: [metadata.name].filter(tag => tag) // Only include name, not tapYear
     };
 
+    // Add audio tag for audio files
+    if (metadata.isAudio) {
+      options.tags.push('audio');
+    }
+
     // Only add OCR for images
     if (metadata.isImage) {
       options.ocr = 'adv_ocr';
     } else if (metadata.isAudio) {
-      // For audio files, explicitly set resource_type to audio
-      options.resource_type = 'audio';
+      // For audio files, use resource_type: 'raw' (Cloudinary doesn't have 'audio' type)
+      options.resource_type = 'raw';
     } else {
       // For video files, explicitly set resource_type to video
       options.resource_type = 'video';
