@@ -56,39 +56,60 @@ module.exports = async (req, res) => {
       api_secret: apiSecret
     });
 
-    // Build upload parameters
-    const uploadParams = {
-      public_id: `tap_${Date.now()}_${(name || 'upload').replace(/\s+/g, '_')}`,
-      context: `name=${name || ''}`,
-      tags: [name].filter(Boolean),
-      resource_type: 'video'
+    // Build upload parameters for signing
+    const timestamp = Math.floor(Date.now() / 1000);
+    const public_id = `tap_${Date.now()}_${(name || 'upload').replace(/\s+/g, '_')}`;
+    
+    // Parameters that will be signed - must match what gets sent to Cloudinary
+    const paramsToSign = {
+      public_id,
+      resource_type: 'video',
+      timestamp
     };
 
-    // Add audio tag if it's an audio file
+    // Add context metadata
+    if (name) {
+      paramsToSign.context = `name=${name}`;
+    }
+
+    // Add tags
+    const tagsList = [];
+    if (name) {
+      tagsList.push(name);
+    }
     if (isAudio) {
-      uploadParams.tags.push('audio');
+      tagsList.push('audio');
+    }
+    if (tagsList.length > 0) {
+      paramsToSign.tags = tagsList.join(',');
     }
 
     // Add folder if specified
     if (folder) {
-      uploadParams.folder = folder;
+      paramsToSign.folder = folder;
     }
 
-    // Generate signature - api_sign_request expects (params_obj, secret)
-    const timestamp = Math.floor(Date.now() / 1000);
+    console.log('Params to sign:', paramsToSign);
+
+    // Generate signature - must only include specific parameters
     const signature = cloudinary.utils.api_sign_request(
-      uploadParams,
+      paramsToSign,
       apiSecret
     );
+
+    console.log('Generated signature:', signature);
 
     const responseObj = {
       success: true,
       signature,
       timestamp,
-      public_id: uploadParams.public_id,
+      public_id,
+      resource_type: 'video',
       cloudName,
       apiKey,
-      uploadParams
+      context: paramsToSign.context || null,
+      tags: tagsList,
+      folder: folder || null
     };
 
     if (res.status) {

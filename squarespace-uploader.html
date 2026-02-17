@@ -661,42 +661,56 @@
         });
 
         if (!signResponse.ok) {
-          throw new Error(`Failed to get upload signature: ${signResponse.status}`);
+          const errText = await signResponse.text();
+          throw new Error(`Failed to get upload signature: ${signResponse.status} - ${errText}`);
         }
 
         const signData = await signResponse.json();
+        console.log('Signature data:', signData);
         
         // Build form data for Cloudinary
         const formData = new FormData();
         formData.append('file', file);
         formData.append('api_key', signData.apiKey);
-        formData.append('timestamp', signData.timestamp);
+        formData.append('timestamp', signData.timestamp.toString());
         formData.append('signature', signData.signature);
         formData.append('public_id', signData.public_id);
+        formData.append('resource_type', signData.resource_type || 'video');
         
-        // Add upload parameters
-        Object.keys(signData.uploadParams).forEach(key => {
-          if (key !== 'public_id') {
-            if (Array.isArray(signData.uploadParams[key])) {
-              signData.uploadParams[key].forEach(val => {
-                formData.append(`${key}[]`, val);
-              });
-            } else {
-              formData.append(key, signData.uploadParams[key]);
-            }
-          }
-        });
+        // Add context and tags individually
+        if (signData.context) {
+          formData.append('context', signData.context);
+        }
+        
+        if (signData.tags && Array.isArray(signData.tags)) {
+          signData.tags.forEach((tag, index) => {
+            formData.append(`tags[${index}]`, tag);
+          });
+        }
+        
+        if (signData.folder) {
+          formData.append('folder', signData.folder);
+        }
 
-        // Upload directly to Cloudinary
-        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`;
+        // Upload directly to Cloudinary - use video resource type
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/video/upload`;
+        console.log('Uploading to:', uploadUrl);
+        
         const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
           body: formData
         });
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
-          throw new Error(`Cloudinary upload failed: ${errorData.error?.message || uploadResponse.status}`);
+          let errorMessage = `HTTP ${uploadResponse.status}`;
+          try {
+            const errorData = await uploadResponse.json();
+            errorMessage = errorData.error?.message || errorData.message || errorMessage;
+          } catch (e) {
+            const errorText = await uploadResponse.text();
+            errorMessage = errorText || errorMessage;
+          }
+          throw new Error(`Cloudinary upload failed: ${errorMessage}`);
         }
 
         const result = await uploadResponse.json();
