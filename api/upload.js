@@ -96,7 +96,8 @@ async function uploadToCloudinary(filePath, filename, metadata) {
   cloudinary.config({
     cloud_name: cloudName,
     api_key: apiKey,
-    api_secret: apiSecret
+    api_secret: apiSecret,
+    secure: true
   });
 
   console.log(`Uploading to cloud: ${cloudName}`);
@@ -117,7 +118,8 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       context: contextStr,
       public_id: publicId,
       // Add tags for metadata (visible in Cloudinary Tags UI)
-      tags: [metadata.name].filter(tag => tag) // Only include name, not tapYear
+      tags: [metadata.name].filter(tag => tag), // Only include name, not tapYear
+      timeout: 120000 // 120 second timeout for large file uploads
     };
 
     // Add audio tag for audio files
@@ -132,8 +134,9 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       // For audio files, use resource_type: 'video' (Cloudinary accepts audio in video container)
       options.resource_type = 'video';
     } else {
-      // For video files, explicitly set resource_type to video
+      // For video files, explicitly set resource_type to video and use chunked upload
       options.resource_type = 'video';
+      options.chunk_size = 5242880; // 5MB chunks for large files
     }
 
     // Add folder if specified
@@ -142,12 +145,20 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       console.log('Upload folder:', metadata.folder);
     }
 
+    // Get file stats to determine upload method
+    const fileStats = fs.statSync(filePath);
+    const fileSizeMB = fileStats.size / (1024 * 1024);
+    console.log(`File size: ${fileSizeMB.toFixed(2)} MB`);
+
     console.log('Upload options:', JSON.stringify(options, null, 2));
     console.log('Tags being sent:', options.tags);
     console.log('Media type: ' + (metadata.isImage ? 'image' : 'video/audio'));
     console.log('Calling cloudinary.uploader.upload...');
 
-    const response = await cloudinary.uploader.upload(filePath, options);
+    // Use chunked upload for large files (>100MB) to avoid 413 errors
+    const response = fileSizeMB > 100 
+      ? await cloudinary.uploader.upload_large(filePath, options)
+      : await cloudinary.uploader.upload(filePath, options);
 
     console.log('Upload successful:', response.public_id);
     console.log('Response tags:', response.tags);
@@ -169,6 +180,9 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     }
     if (error.http_code === 401 || error.status === 401) {
       msg = `Cloudinary authentication failed - Check that CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET are correct. Full error: ${msg}`;
+    }
+    if (error.http_code === 413 || error.status === 413) {
+      msg = `Cloudinary 413 Payload Too Large - The file is too large for standard upload. Try uploading again - the system now uses chunked uploads for large files. Full error: ${msg}`;
     }
     throw new Error(`Cloudinary upload failed: ${msg}`);
   }
