@@ -129,8 +129,8 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     if (metadata.isImage) {
       options.ocr = 'adv_ocr';
     } else if (metadata.isAudio) {
-      // For audio files, use resource_type: 'raw' (Cloudinary doesn't have 'audio' type)
-      options.resource_type = 'raw';
+      // For audio files, use resource_type: 'video' (Cloudinary accepts audio in video container)
+      options.resource_type = 'video';
     } else {
       // For video files, explicitly set resource_type to video
       options.resource_type = 'video';

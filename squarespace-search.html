@@ -577,8 +577,8 @@
       elements.resultsCount.textContent = `${folderName}${queryText}: ${results.length} of ${totalCount} images`;
 
       elements.gallery.innerHTML = results.map(item => {
-        const isVideo = item.resource_type === 'video';
-        const isAudio = item.resource_type === 'raw' && item.tags && item.tags.includes('audio');
+        const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
+        const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
         
         let thumbnailHtml;
         if (isVideo) {
@@ -651,8 +651,8 @@
     }
 
     function openModal(item) {
-      const isVideo = item.resource_type === 'video';
-      const isAudio = item.resource_type === 'raw' && item.tags && item.tags.includes('audio');
+      const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
+      const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
       
       // Hide all media elements and show the appropriate one
       document.getElementById('modalImage').style.display = 'none';

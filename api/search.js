@@ -32,19 +32,19 @@ module.exports = async (req, res) => {
 
   let expression;
   if (!q && !folder) {
-    // No query and no folder - show all images/videos/audio
-    expression = '(resource_type:image OR resource_type:video OR (resource_type:raw AND tags:audio))';
+    // No query and no folder - show all images/videos
+    expression = '(resource_type:image OR resource_type:video)';
   } else if (q && !folder) {
     // Query without folder - search all
     const esc = escapePhrase(q);
-    expression = `(resource_type:image OR resource_type:video OR (resource_type:raw AND tags:audio)) AND tags:"${esc}"`;
+    expression = `(resource_type:image OR resource_type:video) AND tags:"${esc}"`;
   } else if (!q && folder) {
     // Folder without query - show all items in folder
-    expression = `(resource_type:image OR resource_type:video OR (resource_type:raw AND tags:audio)) AND folder:"${escapePhrase(folder)}"`;
+    expression = `(resource_type:image OR resource_type:video) AND folder:"${escapePhrase(folder)}"`;
   } else {
     // Both query and folder - search within folder
     const esc = escapePhrase(q);
-    expression = `(resource_type:image OR resource_type:video OR (resource_type:raw AND tags:audio)) AND tags:"${esc}" AND folder:"${escapePhrase(folder)}"`;
+    expression = `(resource_type:image OR resource_type:video) AND tags:"${esc}" AND folder:"${escapePhrase(folder)}"`;
   }
 
   const body = {
