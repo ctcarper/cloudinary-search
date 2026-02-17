@@ -151,6 +151,24 @@
       background-color: #f5f5f5;
     }
 
+    .gallery-item-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: bold;
+    }
+
+    .gallery-item-placeholder.video {
+      background: linear-gradient(135deg, #FF6B6B 0%, #FF8E72 100%);
+    }
+
+    .gallery-item-placeholder.audio {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
     .gallery-item-info {
       position: absolute;
       bottom: 0;
@@ -561,10 +579,19 @@
       elements.gallery.innerHTML = results.map(item => {
         const isVideo = item.resource_type === 'video';
         const isAudio = item.resource_type === 'audio';
-        const thumbUrl = isVideo ? `${item.secure_url}.jpg` : (isAudio ? 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23667eea%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2260%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3E🎵%3C/text%3E%3C/svg%3E' : item.secure_url);
+        
+        let thumbnailHtml;
+        if (isVideo) {
+          thumbnailHtml = '<div class="gallery-item-placeholder video">🎥</div>';
+        } else if (isAudio) {
+          thumbnailHtml = '<div class="gallery-item-placeholder audio">🎵</div>';
+        } else {
+          thumbnailHtml = `<img src="${item.secure_url}" alt="${item.public_id}" loading="lazy">`;
+        }
+        
         return `
         <div class="gallery-item" onclick="openModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-          <img src="${thumbUrl}" alt="${item.public_id}" loading="lazy">
+          ${thumbnailHtml}
           ${isVideo ? '<div class="gallery-badge">🎥 Video</div>' : ''}
           ${isAudio ? '<div class="gallery-badge">🎵 Audio</div>' : ''}
           <div class="gallery-item-info">
