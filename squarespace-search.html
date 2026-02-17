@@ -60,6 +60,22 @@
       border-color: #4CAF50;
     }
 
+    .folder-select {
+      min-width: 180px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background-color: white;
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+
+    .folder-select:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
     .search-btn {
       padding: 12px 24px;
       background-color: #4CAF50;
@@ -368,6 +384,9 @@
         placeholder="Enter tag name..."
         autocomplete="off"
       >
+      <select class="folder-select" id="folderSelect">
+        <option value="">All Categories</option>
+      </select>
       <button type="submit" class="search-btn" id="searchBtn">Search</button>
       <button type="button" class="search-btn" id="compositesBtn" style="background-color: #2196F3;">Show Composites</button>
     </form>
@@ -399,8 +418,13 @@
     const API_URL = window.location.hostname === 'localhost' 
       ? `${window.location.origin}/api/search`
       : `https://cloudinary-search.vercel.app/api/search`;
+
+    const FOLDERS_API_URL = window.location.hostname === 'localhost' 
+      ? `${window.location.origin}/api/folders`
+      : `https://cloudinary-search.vercel.app/api/folders`;
     
     let currentQuery = '';
+    let currentFolder = '';
     let currentCursor = null;
     let nextCursor = null;
     let totalCount = 0;
@@ -410,12 +434,42 @@
       searchForm: document.getElementById('searchForm'),
       searchInput: document.getElementById('searchInput'),
       searchBtn: document.getElementById('searchBtn'),
+      folderSelect: document.getElementById('folderSelect'),
       gallery: document.getElementById('gallery'),
       loading: document.getElementById('loading'),
       error: document.getElementById('error'),
       pagination: document.getElementById('pagination'),
       resultsCount: document.getElementById('resultsCount')
     };
+
+    // Load available folders
+    async function loadFolders() {
+      try {
+        const response = await fetch(FOLDERS_API_URL);
+        const data = await response.json();
+        
+        if (data.folders && Array.isArray(data.folders)) {
+          const select = elements.folderSelect;
+          
+          data.folders.forEach(folderPath => {
+            if (folderPath) { // Skip empty strings (root is already there)
+              const option = document.createElement('option');
+              option.value = folderPath;
+              const displayName = folderPath.split('/').pop();
+              option.textContent = displayName || folderPath;
+              select.appendChild(option);
+            }
+          });
+          
+          console.log(`Loaded ${data.folders.length} folders for search`);
+        }
+      } catch (error) {
+        console.error('Error loading folders:', error);
+      }
+    }
+
+    // Load folders when page loads
+    loadFolders();
 
     function showError(message) {
       elements.error.textContent = message;
@@ -443,6 +497,7 @@
         if (query) params.append('q', query);
         if (cursor) params.append('next_cursor', cursor);
         if (maxResults) params.append('max_results', maxResults);
+        if (currentFolder) params.append('folder', currentFolder);
 
         const response = await fetch(`${API_URL}?${params.toString()}`);
         
@@ -603,6 +658,7 @@
     elements.searchForm.addEventListener('submit', (e) => {
       e.preventDefault();
       currentQuery = elements.searchInput.value.trim();
+      currentFolder = elements.folderSelect.value;
       
       if (!currentQuery) {
         showError('Please enter a search term');
@@ -612,6 +668,17 @@
       currentCursor = null;
       searchHistory = [];
       fetchResults(currentQuery);
+    });
+
+    // Handle folder selection
+    elements.folderSelect.addEventListener('change', (e) => {
+      currentFolder = e.target.value;
+      // If there's a current query, re-fetch with the new folder filter
+      if (currentQuery) {
+        currentCursor = null;
+        searchHistory = [];
+        fetchResults(currentQuery);
+      }
     });
 
     // Optional: Perform search on Enter key

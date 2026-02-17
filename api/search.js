@@ -26,6 +26,7 @@ module.exports = async (req, res) => {
   const q = (getParam('q') || '').toString().trim();
   const next_cursor = (getParam('next_cursor') || '').toString().trim() || undefined;
   const max_results = Math.min(parseInt(getParam('max_results')) || 30, 100); // Default 30, max 100
+  const folder = (getParam('folder') || '').toString().trim() || undefined;
 
   const escapePhrase = (s) => s.replace(/"/g, '\\"');
 
@@ -36,6 +37,11 @@ module.exports = async (req, res) => {
     const esc = escapePhrase(q);
     // Search only on tags
     expression = `(resource_type:image OR resource_type:video) AND tags:"${esc}"`;
+  }
+
+  // Add folder filter if specified
+  if (folder) {
+    expression += ` AND folder:"${escapePhrase(folder)}"`;
   }
 
   const body = {
