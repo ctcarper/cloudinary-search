@@ -643,6 +643,85 @@
       await performUpload();
     });
 
+    // Direct upload to Cloudinary for large files (bypasses serverless function payload limits)
+    async function uploadDirectToCloudinary(file, name, folder, isAudio) {
+      try {
+        const fileSizeMB = file.size / (1024 * 1024);
+        
+        // Get signature from our server
+        const signUrl = `${API_BASE_URL}/api/sign-upload`;
+        const signResponse = await fetch(signUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            folder,
+            name,
+            isAudio
+          })
+        });
+
+        if (!signResponse.ok) {
+          throw new Error(`Failed to get upload signature: ${signResponse.status}`);
+        }
+
+        const signData = await signResponse.json();
+        
+        // Build form data for Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', signData.apiKey);
+        formData.append('timestamp', signData.timestamp);
+        formData.append('signature', signData.signature);
+        formData.append('public_id', signData.public_id);
+        
+        // Add upload parameters
+        Object.keys(signData.uploadParams).forEach(key => {
+          if (key !== 'public_id') {
+            if (Array.isArray(signData.uploadParams[key])) {
+              signData.uploadParams[key].forEach(val => {
+                formData.append(`${key}[]`, val);
+              });
+            } else {
+              formData.append(key, signData.uploadParams[key]);
+            }
+          }
+        });
+
+        // Upload directly to Cloudinary
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`;
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(`Cloudinary upload failed: ${errorData.error?.message || uploadResponse.status}`);
+        }
+
+        const result = await uploadResponse.json();
+        console.log('Direct upload successful:', result);
+        
+        return {
+          success: true,
+          publicId: result.public_id,
+          secureUrl: result.secure_url,
+          name: name,
+          tags: result.tags || [name],
+          metadata: {
+            width: result.width,
+            height: result.height,
+            format: result.format,
+            bytes: result.bytes,
+            createdAt: result.created_at
+          }
+        };
+      } catch (error) {
+        console.error('Direct upload error:', error);
+        throw error;
+      }
+    }
+
     // Perform the actual upload (can be called manually or automatically in batch mode)
     async function performUpload() {
       uploadCurrentBtn.disabled = true;
@@ -653,61 +732,79 @@
         loading.classList.add('active');
 
         const currentItem = fileQueue[currentFileIndex];
+        const fileSizeMB = currentItem.file.size / (1024 * 1024);
         
-        // Set loading text based on media type
+        // Set loading text based on file type and size
+        const sizeInfo = fileSizeMB > 100 ? '(direct upload)' : '';
         if (currentItem.type === 'image') {
-          loadingText.textContent = 'Uploading and processing with OCR...';
+          loadingText.textContent = `Uploading and processing with OCR ${sizeInfo}...`;
         } else {
-          loadingText.textContent = `Uploading ${currentItem.type}...`;
+          loadingText.textContent = `Uploading ${currentItem.type} ${sizeInfo}...`;
         }
 
-        const formData = new FormData();
-        formData.append('file', currentItem.file);
-        formData.append('name', processingMediaName.value.trim());
-        
-        // Only include OCR text for images
-        if (currentItem.type === 'image' && processingOcrText.value.trim()) {
-          formData.append('ocrText', processingOcrText.value.trim());
-        }
-        
-        // Add selected folder if one is chosen
-        // In batch mode, use the initially selected folder; otherwise use current selection
         const folderToUse = batchMode ? batchFolderSelection : folderSelect.value;
-        if (folderToUse) {
-          formData.append('folder', folderToUse);
-        }
+        const mediaName = processingMediaName.value.trim();
 
-        const uploadUrl = `${API_BASE_URL}/api/upload`;
-        const response = await fetch(uploadUrl, {
-          method: 'POST',
-          body: formData
-        });
+        let data;
 
-        if (!response.ok) {
-          const contentType = response.headers.get('content-type');
-          let errorMessage = `Upload failed (${response.status})`;
+        // For large files (>100MB), use direct upload to bypass serverless limits
+        if (fileSizeMB > 100 && currentItem.type !== 'image') {
+          console.log(`File is ${fileSizeMB.toFixed(2)}MB - using direct upload`);
+          data = await uploadDirectToCloudinary(
+            currentItem.file,
+            mediaName,
+            folderToUse,
+            currentItem.type === 'audio'
+          );
+          if (!data.success) {
+            throw new Error('Direct upload failed');
+          }
+        } else {
+          // Use server upload for small files or images (need OCR processing)
+          const formData = new FormData();
+          formData.append('file', currentItem.file);
+          formData.append('name', mediaName);
           
-          try {
-            if (contentType && contentType.includes('application/json')) {
-              const errorData = await response.json();
-              errorMessage = errorData.error || errorMessage;
-            } else {
-              const errorText = await response.text();
-              errorMessage = errorText || errorMessage;
-            }
-          } catch (e) {
-            errorMessage = `Server error (${response.status})`;
+          if (currentItem.type === 'image' && processingOcrText.value.trim()) {
+            formData.append('ocrText', processingOcrText.value.trim());
           }
           
-          throw new Error(errorMessage);
-        }
+          if (folderToUse) {
+            formData.append('folder', folderToUse);
+          }
 
-        const responseText = await response.text();
-        if (!responseText) {
-          throw new Error('Empty response from server');
+          const uploadUrl = `${API_BASE_URL}/api/upload`;
+          const response = await fetch(uploadUrl, {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) {
+            const contentType = response.headers.get('content-type');
+            let errorMessage = `Upload failed (${response.status})`;
+            
+            try {
+              if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+              } else {
+                const errorText = await response.text();
+                errorMessage = errorText || errorMessage;
+              }
+            } catch (e) {
+              errorMessage = `Server error (${response.status})`;
+            }
+            
+            throw new Error(errorMessage);
+          }
+
+          const responseText = await response.text();
+          if (!responseText) {
+            throw new Error('Empty response from server');
+          }
+          
+          data = JSON.parse(responseText);
         }
-        
-        const data = JSON.parse(responseText);
 
         currentItem.status = 'uploaded';
         uploadSummary.success++;
