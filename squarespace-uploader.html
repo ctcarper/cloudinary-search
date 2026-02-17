@@ -351,12 +351,18 @@
         <div class="hint-text">Select which folder to upload files to</div>
       </div>
 
+      <div class="form-group">
+        <label for="queueGroupTags">Group Tags (Optional)</label>
+        <input type="text" id="queueGroupTags" placeholder="e.g., Event 2024, Winter Collection, Project A" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+        <div class="hint-text">Add tags to be applied to all files in this upload (comma-separated)</div>
+      </div>
+
       <div class="form-group" style="margin-top: 15px;">
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
           <input type="checkbox" id="batchFolderCheckbox" style="cursor: pointer; width: 16px; height: 16px;">
-          <span>Use selected folder for all files (skip folder prompts)</span>
+          <span>Use selected folder and tags for all files (skip prompts)</span>
         </label>
-        <div class="hint-text">When checked, all files upload to the selected folder without re-prompting</div>
+        <div class="hint-text">When checked, uploads use the selected folder and group tags without re-prompting</div>
       </div>
 
       <div class="button-group">
@@ -416,6 +422,12 @@
         <div class="hint-text">Select which folder to upload this media to</div>
       </div>
 
+      <div class="form-group">
+        <label for="processingGroupTags">Additional Tags (Optional)</label>
+        <input type="text" id="processingGroupTags" placeholder="e.g., Event 2024, Winter Collection" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+        <div class="hint-text">Add comma-separated tags for this file (group tags will be added automatically)</div>
+      </div>
+
       <div class="form-group" id="ocrSection" style="display: none;">
         <label for="processingOcrText">OCR Text (extracted from image)</label>
         <textarea id="processingOcrText" readonly placeholder="Text will appear here after upload..."></textarea>
@@ -468,10 +480,12 @@
     const processingFileType = document.getElementById('processingFileType');
     const processingMediaName = document.getElementById('processingMediaName');
     const processingOcrText = document.getElementById('processingOcrText');
+    const processingGroupTags = document.getElementById('processingGroupTags');
     const processingProgress = document.getElementById('processingProgress');
     const totalToProcess = document.getElementById('totalToProcess');
     const folderSelect = document.getElementById('folderSelect');
     const queueFolderSelect = document.getElementById('queueFolderSelect');
+    const queueGroupTags = document.getElementById('queueGroupTags');
     const ocrSection = document.getElementById('ocrSection');
     const batchFolderCheckbox = document.getElementById('batchFolderCheckbox');
     const message = document.getElementById('message');
@@ -489,6 +503,7 @@
     let uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [] };
     let batchMode = false;
     let batchFolderSelection = '';
+    let batchGroupTags = '';
 
     // Determine API base URL based on environment
     const API_BASE_URL = window.location.hostname === 'localhost' 
@@ -628,6 +643,7 @@
       batchMode = batchFolderCheckbox.checked;
       if (batchMode) {
         batchFolderSelection = queueFolderSelect.value;
+        batchGroupTags = queueGroupTags.value.trim();
         folderSelect.disabled = true; // Lock folder during batch upload
       }
       
@@ -787,6 +803,28 @@
             formData.append('folder', folderToUse);
           }
 
+          // Add group tags and file-specific tags
+          let allTags = [];
+          
+          // Add batch mode group tags if enabled
+          if (batchMode && batchGroupTags) {
+            allTags = allTags.concat(
+              batchGroupTags.split(',').map(t => t.trim()).filter(t => t)
+            );
+          }
+          
+          // Add individual file tags (from processingGroupTags)
+          if (processingGroupTags.value.trim()) {
+            allTags = allTags.concat(
+              processingGroupTags.value.trim().split(',').map(t => t.trim()).filter(t => t)
+            );
+          }
+          
+          // Send tags to server if any exist
+          if (allTags.length > 0) {
+            formData.append('tags', JSON.stringify(allTags));
+          }
+
           const uploadUrl = `${API_BASE_URL}/api/upload`;
           const response = await fetch(uploadUrl, {
             method: 'POST',
@@ -848,6 +886,7 @@
         folderSelect.disabled = false;
         batchMode = false;
         batchFolderSelection = '';
+        batchGroupTags = '';
         batchFolderCheckbox.checked = false;
       }
     }
@@ -881,6 +920,7 @@
       processingFileType.textContent = currentItem.type;
       processingMediaName.value = currentItem.name;
       processingOcrText.value = '';
+      processingGroupTags.value = '';
 
       // Hide all preview elements
       processingImage.style.display = 'none';
@@ -981,6 +1021,7 @@
         folderSelect.disabled = false;
         batchMode = false;
         batchFolderSelection = '';
+        batchGroupTags = '';
         batchFolderCheckbox.checked = false;
       }
     }

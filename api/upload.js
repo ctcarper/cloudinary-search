@@ -127,6 +127,11 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       options.tags.push('audio');
     }
 
+    // Add any additional tags from user input
+    if (metadata.additionalTags && Array.isArray(metadata.additionalTags)) {
+      options.tags = options.tags.concat(metadata.additionalTags);
+    }
+
     // Only add OCR for images
     if (metadata.isImage) {
       options.ocr = 'adv_ocr';
@@ -400,6 +405,18 @@ module.exports = async (req, res) => {
     const tapYear = Array.isArray(fields.tapYear) ? fields.tapYear[0] : (fields.tapYear || null);
     const folder = Array.isArray(fields.folder) ? fields.folder[0] : (fields.folder || null);
     
+    // Extract tags (can be a JSON string if sent from frontend)
+    let additionalTags = [];
+    if (fields.tags) {
+      const tagsValue = Array.isArray(fields.tags) ? fields.tags[0] : fields.tags;
+      try {
+        additionalTags = JSON.parse(tagsValue);
+      } catch (e) {
+        // If not JSON, split by comma
+        additionalTags = tagsValue.split(',').map(t => t.trim()).filter(t => t);
+      }
+    }
+    
     // Detect file type based on MIME type
     const mimeType = file.mimetype || '';
     const isImage = mimeType.startsWith('image/');
@@ -407,8 +424,9 @@ module.exports = async (req, res) => {
     console.log('File MIME type:', mimeType);
     console.log('Is image:', isImage);
     console.log('Is audio:', isAudio);
+    console.log('Additional tags:', additionalTags);
 
-    console.log('Metadata:', { imageName, tapYear, folder, isImage });
+    console.log('Metadata:', { imageName, tapYear, folder, isImage, additionalTags });
 
     if (!imageName) {
       console.log('Missing metadata: name is required');
@@ -429,7 +447,7 @@ module.exports = async (req, res) => {
     const cloudinaryResponse = await uploadToCloudinary(
       tempFilePath,
       filename,
-      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage, isAudio: isAudio }
+      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage, isAudio: isAudio, additionalTags: additionalTags }
     );
 
     console.log('Cloudinary upload complete. Response keys:', Object.keys(cloudinaryResponse));
