@@ -114,6 +114,9 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     // Only add OCR for images
     if (metadata.isImage) {
       options.ocr = 'adv_ocr';
+    } else {
+      // For audio and video files, explicitly set resource_type to auto
+      options.resource_type = 'auto';
     }
 
     // Add folder if specified
