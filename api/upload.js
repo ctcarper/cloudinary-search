@@ -85,7 +85,11 @@ async function uploadToCloudinary(filePath, filename, metadata) {
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
   if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error('Missing Cloudinary environment variables (cloud name, api key, api secret)');
+    const missing = [];
+    if (!cloudName) missing.push('CLOUDINARY_CLOUD_NAME');
+    if (!apiKey) missing.push('CLOUDINARY_API_KEY');
+    if (!apiSecret) missing.push('CLOUDINARY_API_SECRET');
+    throw new Error(`Missing Cloudinary environment variables: ${missing.join(', ')}. Check your .env file.`);
   }
 
   // Configure SDK
@@ -95,7 +99,12 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     api_secret: apiSecret
   });
 
-  console.log(`Uploading to cloud (signed): ${cloudName}`);
+  console.log(`Uploading to cloud: ${cloudName}`);
+  console.log('Environment variables loaded:', {
+    cloudName: cloudName,
+    apiKeyLength: apiKey ? apiKey.length : 0,
+    apiSecretLength: apiSecret ? apiSecret.length : 0
+  });
 
   // Build context string
   const contextStr = `name=${metadata.name || ''}${metadata.tapYear ? `|tapYear=${metadata.tapYear}` : ''}`;
@@ -140,8 +149,22 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     console.log('Response context:', response.context);
     return response;
   } catch (error) {
-    // Surface Cloudinary error message text when possible
-    const msg = error && error.message ? error.message : String(error);
+    console.error('Cloudinary upload error details:', {
+      message: error.message,
+      status: error.status,
+      statusCode: error.statusCode,
+      http_code: error.http_code,
+      fullError: error
+    });
+    
+    // Provide helpful error message
+    let msg = error && error.message ? error.message : String(error);
+    if (error.http_code === 404 || error.status === 404) {
+      msg = `Cloudinary API 404 - Check that CLOUDINARY_CLOUD_NAME is correct (currently: "${process.env.CLOUDINARY_CLOUD_NAME}"). Full error: ${msg}`;
+    }
+    if (error.http_code === 401 || error.status === 401) {
+      msg = `Cloudinary authentication failed - Check that CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET are correct. Full error: ${msg}`;
+    }
     throw new Error(`Cloudinary upload failed: ${msg}`);
   }
 }
