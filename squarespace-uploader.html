@@ -601,7 +601,11 @@
         showMessage('Please enter a media name', 'error');
         return;
       }
+      await performUpload();
+    });
 
+    // Perform the actual upload (can be called manually or automatically in batch mode)
+    async function performUpload() {
       uploadCurrentBtn.disabled = true;
       skipCurrentBtn.disabled = true;
 
@@ -676,7 +680,7 @@
 
       } catch (error) {
         console.error('Upload error:', error);
-        currentItem = fileQueue[currentFileIndex];
+        const currentItem = fileQueue[currentFileIndex];
         currentItem.status = 'error';
         uploadSummary.failed++;
         uploadSummary.errors.push(`${currentItem.file.name}: ${error.message}`);
@@ -686,7 +690,7 @@
         currentFileIndex++;
         processNextFile();
       }
-    });
+    }
 
     // Re-enable folder selection after batch upload completes
     function resetBatchMode() {
@@ -770,6 +774,13 @@
       processingSection.classList.add('active');
       uploadCurrentBtn.disabled = false;
       skipCurrentBtn.disabled = false;
+
+      // Auto-upload in batch mode after a brief delay
+      if (batchMode) {
+        setTimeout(() => {
+          performUpload();
+        }, 300);
+      }
     }
 
     function showUploadSummary() {
