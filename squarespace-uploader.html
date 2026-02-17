@@ -746,6 +746,14 @@
         }
       }
 
+      // In batch mode, disable folder selection
+      if (batchMode) {
+        folderSelect.disabled = true;
+        folderSelect.value = batchFolderSelection;
+      } else {
+        folderSelect.disabled = false;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         if (currentItem.type === 'image') {
