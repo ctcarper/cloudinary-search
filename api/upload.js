@@ -20,7 +20,7 @@ const http = require('http');
 async function parseForm(req) {
   return new Promise((resolve, reject) => {
     const form = new IncomingForm({
-      maxFileSize: 1024 * 1024 * 50, // 50MB max
+      maxFileSize: 1024 * 1024 * 500, // 500MB max
       keepExtensions: true
     });
     form.parse(req, (err, fields, files) => {
