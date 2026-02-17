@@ -371,7 +371,7 @@
   <div class="search-container">
     <div class="search-header">
       <h1>Search Gallery</h1>
-      <p>Find images by tag</p>
+      <p>Select a category to view images, or search by tag</p>
     </div>
 
     <div class="error" id="error"></div>
@@ -489,7 +489,7 @@
       }
     }
 
-    async function fetchResults(query, cursor = null, maxResults = null) {
+    async function fetchResults(query = '', cursor = null, maxResults = null) {
       showLoading(true);
       
       try {
@@ -507,7 +507,7 @@
         }
 
         const data = await response.json();
-        displayResults(data);
+        displayResults(data, query);
         showLoading(false);
       } catch (err) {
         showError(`Error: ${err.message}`);
@@ -515,20 +515,25 @@
       }
     }
 
-    function displayResults(data) {
+    function displayResults(data, query = '') {
       const { results = [], next_cursor, total_count } = data;
       
       totalCount = total_count || 0;
       nextCursor = next_cursor;
 
       if (results.length === 0) {
-        elements.gallery.innerHTML = '<div class="no-results">No results found. Try a different search term.</div>';
+        const message = query 
+          ? `No results found for "${query}". Try a different search term.`
+          : `No images found in this category.`;
+        elements.gallery.innerHTML = `<div class="no-results">${message}</div>`;
         elements.resultsCount.textContent = '';
         elements.pagination.innerHTML = '';
         return;
       }
 
-      elements.resultsCount.textContent = `Showing results for "${currentQuery}" (${results.length} of ${totalCount})`;
+      const folderName = currentFolder || 'All Categories';
+      const queryText = query ? ` matching "${query}"` : '';
+      elements.resultsCount.textContent = `${folderName}${queryText}: ${results.length} of ${totalCount} images`;
 
       elements.gallery.innerHTML = results.map(item => {
         const isVideo = item.resource_type === 'video';
@@ -660,8 +665,9 @@
       currentQuery = elements.searchInput.value.trim();
       currentFolder = elements.folderSelect.value;
       
-      if (!currentQuery) {
-        showError('Please enter a search term');
+      // Allow empty query if folder is selected, require query otherwise
+      if (!currentQuery && !currentFolder) {
+        showError('Please enter a search term or select a category');
         return;
       }
 
@@ -670,15 +676,16 @@
       fetchResults(currentQuery);
     });
 
-    // Handle folder selection
+    // Handle folder selection - show all images in that folder
     elements.folderSelect.addEventListener('change', (e) => {
       currentFolder = e.target.value;
-      // If there's a current query, re-fetch with the new folder filter
-      if (currentQuery) {
-        currentCursor = null;
-        searchHistory = [];
-        fetchResults(currentQuery);
-      }
+      currentQuery = ''; // Clear search query
+      elements.searchInput.value = ''; // Clear search input
+      currentCursor = null;
+      searchHistory = [];
+      
+      // Fetch all images in the selected folder
+      fetchResults('');
     });
 
     // Optional: Perform search on Enter key
@@ -692,6 +699,7 @@
     document.getElementById('compositesBtn').addEventListener('click', () => {
       currentQuery = 'composite';
       elements.searchInput.value = 'composite';
+      currentFolder = elements.folderSelect.value;
       currentCursor = null;
       searchHistory = [];
       fetchResults('composite', null, 100);
@@ -699,7 +707,7 @@
 
     // Show initial message (no auto-load)
     window.addEventListener('load', () => {
-      elements.gallery.innerHTML = '<div class="no-results">Enter a search term to find images</div>';
+      elements.gallery.innerHTML = '<div class="no-results">Select a category to view images or enter a search term</div>';
     });
   </script>
 </body>

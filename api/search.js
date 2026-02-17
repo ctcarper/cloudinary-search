@@ -31,17 +31,20 @@ module.exports = async (req, res) => {
   const escapePhrase = (s) => s.replace(/"/g, '\\"');
 
   let expression;
-  if (!q) {
+  if (!q && !folder) {
+    // No query and no folder - show all images/videos
     expression = '(resource_type:image OR resource_type:video)';
-  } else {
+  } else if (q && !folder) {
+    // Query without folder - search all
     const esc = escapePhrase(q);
-    // Search only on tags
     expression = `(resource_type:image OR resource_type:video) AND tags:"${esc}"`;
-  }
-
-  // Add folder filter if specified
-  if (folder) {
-    expression += ` AND folder:"${escapePhrase(folder)}"`;
+  } else if (!q && folder) {
+    // Folder without query - show all items in folder
+    expression = `(resource_type:image OR resource_type:video) AND folder:"${escapePhrase(folder)}"`;
+  } else {
+    // Both query and folder - search within folder
+    const esc = escapePhrase(q);
+    expression = `(resource_type:image OR resource_type:video) AND tags:"${esc}" AND folder:"${escapePhrase(folder)}"`;
   }
 
   const body = {
