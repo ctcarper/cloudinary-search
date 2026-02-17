@@ -343,6 +343,14 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="queueFolderSelect">Media Library Folder</label>
+        <select id="queueFolderSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">
+          <option value="">Loading folders...</option>
+        </select>
+        <div class="hint-text">Select which folder to upload files to</div>
+      </div>
+
       <div class="form-group" style="margin-top: 15px;">
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
           <input type="checkbox" id="batchFolderCheckbox" style="cursor: pointer; width: 16px; height: 16px;">
@@ -438,6 +446,7 @@
     const processingProgress = document.getElementById('processingProgress');
     const totalToProcess = document.getElementById('totalToProcess');
     const folderSelect = document.getElementById('folderSelect');
+    const queueFolderSelect = document.getElementById('queueFolderSelect');
     const ocrSection = document.getElementById('ocrSection');
     const batchFolderCheckbox = document.getElementById('batchFolderCheckbox');
     const message = document.getElementById('message');
@@ -470,38 +479,43 @@
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
-          folderSelect.innerHTML = '';
+          // Function to populate a select element
+          const populateSelect = (selectElement) => {
+            selectElement.innerHTML = '';
+            
+            // Add root folder option
+            const rootOption = document.createElement('option');
+            rootOption.value = '';
+            rootOption.textContent = '📁 Root Folder';
+            selectElement.appendChild(rootOption);
+            
+            // Add other folders
+            data.folders.forEach(folderPath => {
+              if (folderPath) { // Skip empty strings (already added as root)
+                const option = document.createElement('option');
+                option.value = folderPath;
+                const displayName = folderPath.split('/').pop();
+                option.textContent = displayName || folderPath;
+                selectElement.appendChild(option);
+              }
+            });
+          };
           
-          // Add root folder option
-          const rootOption = document.createElement('option');
-          rootOption.value = '';
-          rootOption.textContent = '📁 Root Folder';
-          folderSelect.appendChild(rootOption);
-          
-          // Add other folders
-          data.folders.forEach(folderPath => {
-            if (folderPath) { // Skip empty strings (already added as root)
-              const option = document.createElement('option');
-              option.value = folderPath;
-              // Format folder path for display with indentation for subfolders
-              const parts = folderPath.split('/');
-              const indent = '&nbsp;&nbsp;'.repeat(parts.length - 1);
-              const displayName = parts[parts.length - 1];
-              option.textContent = displayName || folderPath;
-              option.value = folderPath;
-              folderSelect.appendChild(option);
-            }
-          });
+          // Populate both dropdowns
+          populateSelect(folderSelect);
+          populateSelect(queueFolderSelect);
           
           console.log(`Loaded ${data.folders.length} folders`);
         } else {
           console.warn('No folders in response:', data);
           folderSelect.innerHTML = '<option value="">Root Folder</option>';
+          queueFolderSelect.innerHTML = '<option value="">Root Folder</option>';
         }
       } catch (error) {
         console.error('Error loading folders:', error);
         // Set fallback option if fetch fails
         folderSelect.innerHTML = '<option value="">Root Folder (error loading)</option>';
+        queueFolderSelect.innerHTML = '<option value="">Root Folder (error loading)</option>';
       }
     }
 
@@ -588,7 +602,7 @@
       // Check if batch mode is enabled
       batchMode = batchFolderCheckbox.checked;
       if (batchMode) {
-        batchFolderSelection = folderSelect.value;
+        batchFolderSelection = queueFolderSelect.value;
         folderSelect.disabled = true; // Lock folder during batch upload
       }
       
