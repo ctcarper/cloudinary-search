@@ -134,9 +134,8 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       // For audio files, use resource_type: 'video' (Cloudinary accepts audio in video container)
       options.resource_type = 'video';
     } else {
-      // For video files, explicitly set resource_type to video and use chunked upload
+      // For video files, explicitly set resource_type to video
       options.resource_type = 'video';
-      options.chunk_size = 5242880; // 5MB chunks for large files
     }
 
     // Add folder if specified
@@ -153,12 +152,35 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     console.log('Upload options:', JSON.stringify(options, null, 2));
     console.log('Tags being sent:', options.tags);
     console.log('Media type: ' + (metadata.isImage ? 'image' : 'video/audio'));
-    console.log('Calling cloudinary.uploader.upload...');
-
-    // Use chunked upload for large files (>100MB) to avoid 413 errors
-    const response = fileSizeMB > 100 
-      ? await cloudinary.uploader.upload_large(filePath, options)
-      : await cloudinary.uploader.upload(filePath, options);
+    
+    let response;
+    
+    // For large files (>100MB), use streaming upload to avoid 413 payload errors
+    if (fileSizeMB > 100) {
+      console.log('Using streaming upload for large file...');
+      // Add extended timeout for streaming uploads
+      options.timeout = 300000; // 5 minute timeout for streaming
+      
+      response = await new Promise((resolve, reject) => {
+        const handleStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+          if (error) {
+            reject(new Error(`Cloudinary stream upload failed: ${error.message}`));
+          } else {
+            resolve(result);
+          }
+        });
+        
+        fs.createReadStream(filePath)
+          .on('error', (error) => {
+            handleStream.destroy();
+            reject(new Error(`File stream error: ${error.message}`));
+          })
+          .pipe(handleStream);
+      });
+    } else {
+      console.log('Using standard upload...');
+      response = await cloudinary.uploader.upload(filePath, options);
+    }
 
     console.log('Upload successful:', response.public_id);
     console.log('Response tags:', response.tags);
@@ -182,7 +204,7 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       msg = `Cloudinary authentication failed - Check that CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET are correct. Full error: ${msg}`;
     }
     if (error.http_code === 413 || error.status === 413) {
-      msg = `Cloudinary 413 Payload Too Large - The file is too large for standard upload. Try uploading again - the system now uses chunked uploads for large files. Full error: ${msg}`;
+      msg = `Cloudinary 413 Payload Too Large - This shouldn't occur with streaming uploads. Try uploading again, or check if the video codec or format is supported. Full error: ${msg}`;
     }
     throw new Error(`Cloudinary upload failed: ${msg}`);
   }
