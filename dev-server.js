@@ -6,6 +6,7 @@ const path = require('path');
 const searchHandler = require('./api/search.js');
 const uploadHandler = require('./api/upload.js');
 const foldersHandler = require('./api/folders.js');
+const signUploadHandler = require('./api/sign-upload.js');
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -124,6 +125,36 @@ const server = http.createServer((req, res) => {
       }
     });
 
+  } else if (pathname === '/api/sign-upload') {
+    // Wrap response with necessary methods for sign-upload handler
+    const vres = res;
+    
+    // Ensure status method exists
+    if (!vres.status) {
+      vres.status = function(code) {
+        this.statusCode = code;
+        return this;
+      };
+    }
+    
+    // Ensure json method exists
+    if (!vres.json) {
+      vres.json = function(obj) {
+        this.setHeader('Content-Type', 'application/json');
+        this.writeHead(this.statusCode || 200);
+        this.end(JSON.stringify(obj));
+      };
+    }
+    
+    // Call handler and catch any errors
+    signUploadHandler(req, vres).catch(err => {
+      console.error('Sign upload handler error:', err.message);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+
   } else if (pathname === '/' || pathname === '/search') {
     // Serve search page
     const filePath = path.join(__dirname, 'squarespace-search.html');
@@ -170,8 +201,10 @@ server.listen(port, () => {
   console.log(`║  • http://localhost:${port}/uploader   → Bulk Uploader           ║`);
   console.log('╠══════════════════════════════════════════════════════════════════╣');
   console.log('║ APIs:                                                            ║');
-  console.log(`║  • http://localhost:${port}/api/search  → Search API             ║`);
-  console.log(`║  • http://localhost:${port}/api/upload  → Upload API             ║`);
+  console.log(`║  • http://localhost:${port}/api/search       → Search API         ║`);
+  console.log(`║  • http://localhost:${port}/api/upload       → Upload API         ║`);
+  console.log(`║  • http://localhost:${port}/api/sign-upload  → Sign Upload Token  ║`);
+  console.log(`║  • http://localhost:${port}/api/folders      → List Folders       ║`);
   console.log('╠══════════════════════════════════════════════════════════════════╣');
   console.log('║ Health Check:                                                    ║');
   console.log(`║  • http://localhost:${port}/health    → API Status              ║`);
