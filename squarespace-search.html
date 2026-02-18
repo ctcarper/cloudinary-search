@@ -604,7 +604,7 @@
       elements.gallery.innerHTML = results.map(item => {
         const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
         const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
-        const isPDF = item.resource_type === 'image' && item.tags && item.tags.includes('pdf');
+        const isPDF = (item.resource_type === 'image' && (item.tags?.includes('pdf') || item.format === 'pdf'));
         
         let thumbnailHtml;
         if (isVideo) {
@@ -615,13 +615,14 @@
           // For PDFs, add transformation to generate a preview image
           let imageUrl = item.secure_url;
           if (isPDF) {
-            // Extract cloud name and public_id to reconstruct URL with transformation
-            const match = imageUrl.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/([^/]+)\/(.*)/);
-            if (match) {
-              const cloudName = match[1];
-              const version = match[2];
-              const publicId = match[3];
-              // Add transformation to create proper PDF preview: scale to reasonable thumbnail size
+            // Use Cloudinary URL transformation to generate PDF preview
+            // Extract cloud name and version from URL
+            const urlMatch = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/(v\d+)\/(.*)/);
+            if (urlMatch) {
+              const cloudName = urlMatch[1];
+              const version = urlMatch[2];
+              const publicId = urlMatch[3];
+              // Build transformation URL: scale to thumbnail size with auto format
               imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_scale,w_300,h_400,f_auto/${version}/${publicId}`;
             }
           }
@@ -694,7 +695,7 @@
     function openModal(item) {
       const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
       const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
-      const isPDF = item.resource_type === 'image' && item.tags && item.tags.includes('pdf');
+      const isPDF = (item.resource_type === 'image' && (item.tags?.includes('pdf') || item.format === 'pdf'));
       
       // Hide all media elements and show the appropriate one
       document.getElementById('modalImage').style.display = 'none';
@@ -712,12 +713,12 @@
         document.getElementById('modalAudio').style.display = 'block';
       } else if (isPDF) {
         // For PDFs, show a preview image plus the download link
-        const match = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/([^/]+)\/(.*)/);
-        if (match) {
-          const cloudName = match[1];
-          const version = match[2];
-          const publicId = match[3];
-          // Create preview URL with transformation
+        const urlMatch = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/(v\d+)\/(.*)/);
+        if (urlMatch) {
+          const cloudName = urlMatch[1];
+          const version = urlMatch[2];
+          const publicId = urlMatch[3];
+          // Create preview URL with transformation to render PDF as image
           const previewUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_scale,w_600,h_800,f_auto/${version}/${publicId}`;
           document.getElementById('modalImage').src = previewUrl;
           document.getElementById('modalImage').style.display = 'block';
