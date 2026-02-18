@@ -722,9 +722,12 @@
           const previewUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_scale,w_600,h_800,f_auto/${version}/${publicId}`;
           document.getElementById('modalImage').src = previewUrl;
           document.getElementById('modalImage').style.display = 'block';
+          
+          // Create download URL - add transformation flag to ensure proper serving
+          const downloadUrl = `https://res.cloudinary.com/${cloudName}/image/upload/fl_inline/${version}/${publicId}`;
+          document.getElementById('pdfDownloadLink').href = downloadUrl;
         }
         document.getElementById('pdfPlaceholder').style.display = 'flex';
-        document.getElementById('pdfDownloadLink').href = item.secure_url;
       } else {
         document.getElementById('modalImage').src = item.secure_url;
         document.getElementById('modalImage').style.display = 'block';
