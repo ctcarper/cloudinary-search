@@ -40,7 +40,16 @@ module.exports = async (req, res) => {
 
     // Fetch the PDF from Cloudinary using https module
     return new Promise((resolve, reject) => {
-      https.get(url, (response) => {
+      const options = {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'application/pdf',
+          'Referer': 'https://cloudinary.com/',
+          'Accept-Encoding': 'gzip, deflate'
+        }
+      };
+      
+      https.get(url, options, (response) => {
         if (response.statusCode !== 200) {
           console.error(`Cloudinary response error: ${response.statusCode} - ${response.statusMessage}`);
           console.error('Response headers:', response.headers);
