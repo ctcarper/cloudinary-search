@@ -718,6 +718,8 @@
           const cloudName = urlMatch[1];
           const version = urlMatch[2];
           const publicId = urlMatch[3];
+          console.log('PDF Modal - cloudName:', cloudName, 'version:', version, 'publicId:', publicId);
+          console.log('Original secure_url:', item.secure_url);
           // Create preview URL with transformation to render PDF as image
           const previewUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_scale,w_600,h_800,f_auto/${version}/${publicId}`;
           document.getElementById('modalImage').src = previewUrl;

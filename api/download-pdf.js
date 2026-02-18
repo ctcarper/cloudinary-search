@@ -35,15 +35,15 @@ module.exports = async (req, res) => {
     // Construct permanent CDN URL (not time-limited like secure_url)
     const url = `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`;
     
-    console.log('PDF download request for:', url);
+    console.log('PDF download request - cloudName:', cloudName, 'publicId:', publicId);
+    console.log('Full URL:', url);
 
-    // Fetch the PDF from Cloudinary using https module
-    return new Promise((resolve, reject) => {
       https.get(url, (response) => {
         if (response.statusCode !== 200) {
-          console.error(`Cloudinary response error: ${response.statusCode}`);
+          console.error(`Cloudinary response error: ${response.statusCode} - ${response.statusMessage}`);
+          console.error('Response headers:', response.headers);
           res.writeHead(response.statusCode, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: `Failed to fetch PDF: ${response.statusCode}` }));
+          res.end(JSON.stringify({ error: `Failed to fetch PDF: ${response.statusCode} ${response.statusMessage}` }));
           resolve();
           return;
         }
