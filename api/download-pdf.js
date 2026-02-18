@@ -1,6 +1,6 @@
 /**
  * Proxy endpoint for downloading PDFs from Cloudinary
- * Bypasses CORS issues by fetching on the server side
+ * Constructs a permanent CDN URL from public_id to avoid 401 errors with secure_url
  */
 
 const https = require('https');
@@ -25,17 +25,16 @@ module.exports = async (req, res) => {
       });
     });
 
-    const { url, fileName } = body;
+    const { cloudName, publicId, fileName } = body;
 
-    if (!url) {
-      if (res.status) {
-        return res.status(400).json({ error: 'URL is required' });
-      } else {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ error: 'URL is required' }));
-      }
+    if (!cloudName || !publicId) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'cloudName and publicId are required' }));
     }
 
+    // Construct permanent CDN URL (not time-limited like secure_url)
+    const url = `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`;
+    
     console.log('PDF download request for:', url);
 
     // Fetch the PDF from Cloudinary using https module
@@ -43,14 +42,8 @@ module.exports = async (req, res) => {
       https.get(url, (response) => {
         if (response.statusCode !== 200) {
           console.error(`Cloudinary response error: ${response.statusCode}`);
-          if (res.status) {
-            res.status(response.statusCode).json({ 
-              error: `Failed to fetch PDF: ${response.statusCode} ${response.statusMessage}` 
-            });
-          } else {
-            res.writeHead(response.statusCode, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: `Failed to fetch PDF: ${response.statusCode}` }));
-          }
+          res.writeHead(response.statusCode, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Failed to fetch PDF: ${response.statusCode}` }));
           resolve();
           return;
         }
@@ -81,12 +74,8 @@ module.exports = async (req, res) => {
       }).on('error', (error) => {
         console.error('HTTPS request error:', error);
         if (!res.headersSent) {
-          if (res.status) {
-            res.status(500).json({ error: error.message || 'Internal server error' });
-          } else {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: error.message || 'Internal server error' }));
-          }
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message || 'Internal server error' }));
         }
         reject(error);
       });
@@ -97,13 +86,10 @@ module.exports = async (req, res) => {
     const errorMsg = error.message || 'Internal server error';
     
     if (!res.headersSent) {
-      if (res.status) {
-        res.status(500).json({ error: errorMsg });
-      } else {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: errorMsg }));
-      }
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: errorMsg }));
     }
   }
 };
+
 
