@@ -330,9 +330,9 @@
       <div class="dropzone" id="dropzone">
         <div class="dropzone-icon">📁</div>
         <div class="dropzone-text">Drag and drop your files here</div>
-        <div class="dropzone-hint">Images, videos, and audio files supported</div>
+        <div class="dropzone-hint">Images, videos, audio, and PDF documents supported</div>
       </div>
-      <input type="file" id="fileInput" accept="image/*,video/*,audio/*" multiple>
+      <input type="file" id="fileInput" accept="image/*,video/*,audio/*,application/pdf" multiple>
     </div>
 
     <!-- Queue Section -->
@@ -375,6 +375,13 @@
     <div id="processingSection" class="preview-section">
       <img id="processingImage" class="preview-image" alt="Preview" style="display: none;">
       <video id="processingVideo" class="preview-image" controls style="display: none;"></video>
+      
+      <div id="pdfPlaceholder" style="display: none; text-align: center; margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); width: 120px; height: 150px; margin: 20px auto; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);">
+          <div style="color: white; font-size: 48px; font-weight: bold;">📄</div>
+        </div>
+        <div style="color: #666; font-size: 14px; font-weight: 600;">PDF Document</div>
+      </div>
       
       <div id="audioPlaceholder" style="display: none; text-align: center; margin-bottom: 20px;">
         <svg width="120" height="120" viewBox="0 0 120 120" style="margin: 20px auto; display: block;">
@@ -590,11 +597,12 @@
       const validFiles = files.filter(f => {
         return f.type.startsWith('image/') || 
                f.type.startsWith('video/') || 
-               f.type.startsWith('audio/');
+               f.type.startsWith('audio/') ||
+               f.type === 'application/pdf';
       });
       
       if (validFiles.length === 0) {
-        showMessage('Please select image, video, or audio files only', 'error');
+        showMessage('Please select image, video, audio, or PDF files only', 'error');
         return;
       }
 
@@ -602,7 +610,7 @@
         file,
         name: file.name.replace(/\.[^/.]+$/, ''),
         status: 'pending',
-        type: file.type.split('/')[0] // 'image', 'video', or 'audio'
+        type: file.type === 'application/pdf' ? 'pdf' : file.type.split('/')[0] // 'image', 'video', 'audio', or 'pdf'
       }));
 
       updateQueueDisplay();
@@ -768,6 +776,8 @@
         const sizeInfo = fileSizeMB > 100 ? '(direct upload)' : '';
         if (currentItem.type === 'image') {
           loadingText.textContent = `Uploading and processing with OCR ${sizeInfo}...`;
+        } else if (currentItem.type === 'pdf') {
+          loadingText.textContent = `Uploading PDF document ${sizeInfo}...`;
         } else {
           loadingText.textContent = `Uploading ${currentItem.type} ${sizeInfo}...`;
         }
@@ -927,6 +937,7 @@
       processingVideo.style.display = 'none';
       processingAudio.style.display = 'none';
       audioPlaceholder.style.display = 'none';
+      document.getElementById('pdfPlaceholder').style.display = 'none';
 
       // Hide OCR section for non-images
       if (currentItem.type === 'image') {
@@ -939,6 +950,8 @@
         } else if (currentItem.type === 'audio') {
           audioPlaceholder.style.display = 'block';
           processingAudio.style.display = 'block';
+        } else if (currentItem.type === 'pdf') {
+          document.getElementById('pdfPlaceholder').style.display = 'block';
         }
       }
 
@@ -950,17 +963,20 @@
         folderSelect.disabled = false;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (currentItem.type === 'image') {
-          processingImage.src = e.target.result;
-        } else if (currentItem.type === 'video') {
-          processingVideo.src = e.target.result;
-        } else if (currentItem.type === 'audio') {
-          processingAudio.src = e.target.result;
-        }
-      };
-      reader.readAsDataURL(currentItem.file);
+      // For PDFs, we don't need to load the file data since we just show a placeholder
+      if (currentItem.type !== 'pdf') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (currentItem.type === 'image') {
+            processingImage.src = e.target.result;
+          } else if (currentItem.type === 'video') {
+            processingVideo.src = e.target.result;
+          } else if (currentItem.type === 'audio') {
+            processingAudio.src = e.target.result;
+          }
+        };
+        reader.readAsDataURL(currentItem.file);
+      }
 
       loading.classList.remove('active');
       processingSection.classList.add('active');

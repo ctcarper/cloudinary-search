@@ -138,6 +138,11 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     } else if (metadata.isAudio) {
       // For audio files, use resource_type: 'video' (Cloudinary accepts audio in video container)
       options.resource_type = 'video';
+    } else if (metadata.isPDF) {
+      // For PDFs, use resource_type: 'raw' (generic documents)
+      options.resource_type = 'raw';
+      // Add PDF tag for identification
+      options.tags.push('pdf');
     } else {
       // For video files, explicitly set resource_type to video
       options.resource_type = 'video';
@@ -421,12 +426,14 @@ module.exports = async (req, res) => {
     const mimeType = file.mimetype || '';
     const isImage = mimeType.startsWith('image/');
     const isAudio = mimeType.startsWith('audio/');
+    const isPDF = mimeType === 'application/pdf' || file.originalFilename?.toLowerCase().endsWith('.pdf');
     console.log('File MIME type:', mimeType);
     console.log('Is image:', isImage);
     console.log('Is audio:', isAudio);
+    console.log('Is PDF:', isPDF);
     console.log('Additional tags:', additionalTags);
 
-    console.log('Metadata:', { imageName, tapYear, folder, isImage, additionalTags });
+    console.log('Metadata:', { imageName, tapYear, folder, isImage, isAudio, isPDF });
 
     if (!imageName) {
       console.log('Missing metadata: name is required');
@@ -447,7 +454,7 @@ module.exports = async (req, res) => {
     const cloudinaryResponse = await uploadToCloudinary(
       tempFilePath,
       filename,
-      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage, isAudio: isAudio, additionalTags: additionalTags }
+      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage, isAudio: isAudio, isPDF: isPDF, additionalTags: additionalTags }
     );
 
     console.log('Cloudinary upload complete. Response keys:', Object.keys(cloudinaryResponse));
