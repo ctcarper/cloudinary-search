@@ -612,8 +612,21 @@
         } else if (isAudio) {
           thumbnailHtml = '<div class="gallery-item-placeholder audio">🎵</div>';
         } else {
+          // For PDFs, add transformation to generate a preview image
+          let imageUrl = item.secure_url;
+          if (isPDF) {
+            // Extract cloud name and public_id to reconstruct URL with transformation
+            const match = imageUrl.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/([^/]+)\/(.*)/);
+            if (match) {
+              const cloudName = match[1];
+              const version = match[2];
+              const publicId = match[3];
+              // Add transformation to create proper PDF preview: scale to reasonable thumbnail size
+              imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_scale,w_300,h_400,f_auto/${version}/${publicId}`;
+            }
+          }
           // For images and PDFs (which are uploaded as image type), display the thumbnail
-          thumbnailHtml = `<img src="${item.secure_url}" alt="${item.public_id}" loading="lazy">`;
+          thumbnailHtml = `<img src="${imageUrl}" alt="${item.public_id}" loading="lazy">`;
         }
         
         return `
@@ -698,6 +711,17 @@
         document.getElementById('modalAudio').src = item.secure_url;
         document.getElementById('modalAudio').style.display = 'block';
       } else if (isPDF) {
+        // For PDFs, show a preview image plus the download link
+        const match = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/([^/]+)\/(.*)/);
+        if (match) {
+          const cloudName = match[1];
+          const version = match[2];
+          const publicId = match[3];
+          // Create preview URL with transformation
+          const previewUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_scale,w_600,h_800,f_auto/${version}/${publicId}`;
+          document.getElementById('modalImage').src = previewUrl;
+          document.getElementById('modalImage').style.display = 'block';
+        }
         document.getElementById('pdfPlaceholder').style.display = 'flex';
         document.getElementById('pdfDownloadLink').href = item.secure_url;
       } else {
