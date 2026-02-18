@@ -7,6 +7,7 @@ const searchHandler = require('./api/search.js');
 const uploadHandler = require('./api/upload.js');
 const foldersHandler = require('./api/folders.js');
 const signUploadHandler = require('./api/sign-upload.js');
+const downloadPdfHandler = require('./api/download-pdf.js');
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -149,6 +150,19 @@ const server = http.createServer((req, res) => {
     // Call handler and catch any errors
     signUploadHandler(req, vres).catch(err => {
       console.error('Sign upload handler error:', err.message);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+
+  } else if (pathname === '/api/download-pdf') {
+    // Wrap response with necessary methods for download-pdf handler
+    const vres = res;
+    
+    // Call handler and catch any errors
+    downloadPdfHandler(req, vres).catch(err => {
+      console.error('Download PDF handler error:', err.message);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));

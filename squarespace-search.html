@@ -723,7 +723,7 @@
           document.getElementById('modalImage').src = previewUrl;
           document.getElementById('modalImage').style.display = 'block';
           
-          // Set up download button with fetch-based download handler
+          // Set up download button with server-side proxy endpoint
           const fileName = item.public_id.split('/').pop() || 'document.pdf';
           const pdfUrl = item.secure_url;
           const downloadBtn = document.getElementById('pdfDownloadButton');
@@ -731,7 +731,21 @@
             try {
               downloadBtn.disabled = true;
               downloadBtn.textContent = 'Downloading...';
-              const response = await fetch(pdfUrl);
+              
+              // Use server-side proxy to avoid CORS issues
+              const API_DOWNLOAD_URL = window.location.hostname === 'localhost' 
+                ? `${window.location.origin}/api/download-pdf`
+                : `https://cloudinary-search.vercel.app/api/download-pdf`;
+              
+              const response = await fetch(API_DOWNLOAD_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  url: pdfUrl,
+                  fileName: fileName
+                })
+              });
+              
               if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
               const blob = await response.blob();
               const url = window.URL.createObjectURL(blob);
