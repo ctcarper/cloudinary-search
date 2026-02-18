@@ -467,7 +467,7 @@
           <div id="pdfPlaceholder" class="pdf-placeholder" style="display:none;">
             <div style="font-size: 4rem; margin-bottom: 1rem;">📄</div>
             <p id="pdfMessage" style="margin: 0; color: #666;">
-              <a id="pdfDownloadLink" href="" target="_blank" download style="color: #2196F3; text-decoration: underline;">Download PDF</a>
+              <button id="pdfDownloadButton" style="padding: 8px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Download PDF</button>
             </p>
           </div>
         </div>
@@ -712,7 +712,7 @@
         document.getElementById('modalAudio').src = item.secure_url;
         document.getElementById('modalAudio').style.display = 'block';
       } else if (isPDF) {
-        // For PDFs, show a preview image plus the download link
+        // For PDFs, show a preview image plus the download button
         const urlMatch = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/(v\d+)\/(.*)/);
         if (urlMatch) {
           const cloudName = urlMatch[1];
@@ -723,11 +723,36 @@
           document.getElementById('modalImage').src = previewUrl;
           document.getElementById('modalImage').style.display = 'block';
           
-          // Create download URL using /dl transformation flag for reliable download/viewing
+          // Set up download button with fetch-based download handler
           const fileName = item.public_id.split('/').pop() || 'document.pdf';
-          const downloadUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${version}/${publicId}`;
-          document.getElementById('pdfDownloadLink').href = downloadUrl;
-          document.getElementById('pdfDownloadLink').download = fileName;
+          const pdfUrl = item.secure_url;
+          const downloadBtn = document.getElementById('pdfDownloadButton');
+          downloadBtn.onclick = async function() {
+            try {
+              downloadBtn.disabled = true;
+              downloadBtn.textContent = 'Downloading...';
+              const response = await fetch(pdfUrl);
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = fileName;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+              downloadBtn.disabled = false;
+              downloadBtn.textContent = 'Download PDF';
+            } catch (error) {
+              console.error('Download error:', error);
+              downloadBtn.textContent = 'Download Failed';
+              downloadBtn.disabled = false;
+              setTimeout(() => {
+                downloadBtn.textContent = 'Download PDF';
+              }, 3000);
+            }
+          };
         }
         document.getElementById('pdfPlaceholder').style.display = 'flex';
       } else {
