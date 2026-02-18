@@ -169,6 +169,10 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
+    .gallery-item-placeholder.pdf {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
     .gallery-item-info {
       position: absolute;
       bottom: 0;
@@ -358,6 +362,21 @@
       font-size: 48px;
     }
 
+    .pdf-placeholder {
+      width: 100%;
+      max-width: 400px;
+      height: 200px;
+      margin: 20px auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+      border-radius: 12px;
+      color: white;
+      font-size: 48px;
+    }
+
     .gallery-badge {
       position: absolute;
       top: 8px;
@@ -445,6 +464,12 @@
           <video id="modalVideo" class="modal-video" controls style="display:none;"></video>
           <div id="audioPlaceholder" class="audio-placeholder" style="display:none;">🎵</div>
           <audio id="modalAudio" class="modal-audio" controls style="display:none;"></audio>
+          <div id="pdfPlaceholder" class="pdf-placeholder" style="display:none;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📄</div>
+            <p id="pdfMessage" style="margin: 0; color: #666;">
+              <a id="pdfDownloadLink" href="" target="_blank" download style="color: #2196F3; text-decoration: underline;">Download PDF</a>
+            </p>
+          </div>
         </div>
         <div class="modal-info">
           <div class="modal-title" id="modalTitle"></div>
@@ -574,17 +599,20 @@
 
       const folderName = currentFolder || 'All Categories';
       const queryText = query ? ` matching "${query}"` : '';
-      elements.resultsCount.textContent = `${folderName}${queryText}: ${results.length} of ${totalCount} images`;
+      elements.resultsCount.textContent = `${folderName}${queryText}: ${results.length} of ${totalCount} items`;
 
       elements.gallery.innerHTML = results.map(item => {
         const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
         const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
+        const isPDF = item.resource_type === 'raw' && item.tags && item.tags.includes('pdf');
         
         let thumbnailHtml;
         if (isVideo) {
           thumbnailHtml = '<div class="gallery-item-placeholder video">🎥</div>';
         } else if (isAudio) {
           thumbnailHtml = '<div class="gallery-item-placeholder audio">🎵</div>';
+        } else if (isPDF) {
+          thumbnailHtml = '<div class="gallery-item-placeholder pdf">📄</div>';
         } else {
           thumbnailHtml = `<img src="${item.secure_url}" alt="${item.public_id}" loading="lazy">`;
         }
@@ -594,6 +622,7 @@
           ${thumbnailHtml}
           ${isVideo ? '<div class="gallery-badge">🎥 Video</div>' : ''}
           ${isAudio ? '<div class="gallery-badge">🎵 Audio</div>' : ''}
+          ${isPDF ? '<div class="gallery-badge">📄 Document</div>' : ''}
           <div class="gallery-item-info">
             <div class="gallery-item-title">${escapeHtml(item.public_id)}</div>
             <div class="gallery-item-meta">${isAudio ? item.format : (item.width + 'x' + item.height + ' • ' + item.format)}</div>
@@ -653,12 +682,14 @@
     function openModal(item) {
       const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
       const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
+      const isPDF = item.resource_type === 'raw' && item.tags && item.tags.includes('pdf');
       
       // Hide all media elements and show the appropriate one
       document.getElementById('modalImage').style.display = 'none';
       document.getElementById('modalVideo').style.display = 'none';
       document.getElementById('modalAudio').style.display = 'none';
       document.getElementById('audioPlaceholder').style.display = 'none';
+      document.getElementById('pdfPlaceholder').style.display = 'none';
       
       if (isVideo) {
         document.getElementById('modalVideo').src = item.secure_url;
@@ -667,6 +698,9 @@
         document.getElementById('audioPlaceholder').style.display = 'flex';
         document.getElementById('modalAudio').src = item.secure_url;
         document.getElementById('modalAudio').style.display = 'block';
+      } else if (isPDF) {
+        document.getElementById('pdfPlaceholder').style.display = 'flex';
+        document.getElementById('pdfDownloadLink').href = item.secure_url;
       } else {
         document.getElementById('modalImage').src = item.secure_url;
         document.getElementById('modalImage').style.display = 'block';

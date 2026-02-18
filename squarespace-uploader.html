@@ -668,7 +668,7 @@
     });
 
     // Direct upload to Cloudinary for large files (bypasses serverless function payload limits)
-    async function uploadDirectToCloudinary(file, name, folder, isAudio) {
+    async function uploadDirectToCloudinary(file, name, folder, isAudio, isPDF) {
       try {
         const fileSizeMB = file.size / (1024 * 1024);
         
@@ -680,7 +680,8 @@
           body: JSON.stringify({
             folder,
             name,
-            isAudio
+            isAudio,
+            isPDF
           })
         });
 
@@ -706,9 +707,13 @@
           formData.append('context', signData.context);
         }
         
-        if (signData.tags && Array.isArray(signData.tags)) {
-          signData.tags.forEach((tag, index) => {
-            formData.append(`tags[${index}]`, tag);
+        if (signData.tags) {
+          // Tags might be a string or array
+          const tagsArray = typeof signData.tags === 'string' 
+            ? signData.tags.split(',') 
+            : signData.tags;
+          tagsArray.forEach((tag, index) => {
+            formData.append(`tags[${index}]`, tag.trim());
           });
         }
         
@@ -716,8 +721,9 @@
           formData.append('folder', signData.folder);
         }
 
-        // Upload directly to Cloudinary - use video resource type
-        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/video/upload`;
+        // Use correct endpoint based on resource type
+        const typeEndpoint = signData.resource_type === 'raw' ? 'raw' : 'video';
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${typeEndpoint}/upload`;
         console.log('Uploading to:', uploadUrl);
         
         const uploadResponse = await fetch(uploadUrl, {
@@ -794,7 +800,8 @@
             currentItem.file,
             mediaName,
             folderToUse,
-            currentItem.type === 'audio'
+            currentItem.type === 'audio',
+            currentItem.type === 'pdf'
           );
           if (!data.success) {
             throw new Error('Direct upload failed');

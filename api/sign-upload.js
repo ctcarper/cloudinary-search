@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
       });
     });
 
-    const { folder, name, isAudio } = body;
+    const { folder, name, isAudio, isPDF } = body;
 
     cloudinary.config({
       cloud_name: cloudName,
@@ -60,10 +60,16 @@ module.exports = async (req, res) => {
     const timestamp = Math.floor(Date.now() / 1000);
     const public_id = `tap_${Date.now()}_${(name || 'upload').replace(/\s+/g, '_')}`;
     
+    // Determine resource type based on file type
+    let resourceType = 'video'; // default for videos and audio
+    if (isPDF) {
+      resourceType = 'raw'; // PDFs are raw documents
+    }
+    
     // Parameters that will be signed - must match what gets sent to Cloudinary
     const paramsToSign = {
       public_id,
-      resource_type: 'video',
+      resource_type: resourceType,
       timestamp
     };
 
@@ -79,6 +85,9 @@ module.exports = async (req, res) => {
     }
     if (isAudio) {
       tagsList.push('audio');
+    }
+    if (isPDF) {
+      tagsList.push('pdf');
     }
     if (tagsList.length > 0) {
       paramsToSign.tags = tagsList.join(',');
@@ -104,7 +113,7 @@ module.exports = async (req, res) => {
       signature,
       timestamp,
       public_id,
-      resource_type: 'video',
+      resource_type: resourceType,
       cloudName,
       apiKey,
       context: paramsToSign.context || null,

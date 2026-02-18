@@ -161,7 +161,7 @@ async function uploadToCloudinary(filePath, filename, metadata) {
 
     console.log('Upload options:', JSON.stringify(options, null, 2));
     console.log('Tags being sent:', options.tags);
-    console.log('Media type: ' + (metadata.isImage ? 'image' : 'video/audio'));
+    console.log('Media type: ' + (metadata.isImage ? 'image' : (metadata.isPDF ? 'document/PDF' : (metadata.isAudio ? 'audio' : 'video'))));
     
     let response;
     
