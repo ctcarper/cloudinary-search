@@ -38,6 +38,8 @@ module.exports = async (req, res) => {
     console.log('PDF download request - cloudName:', cloudName, 'publicId:', publicId);
     console.log('Full URL:', url);
 
+    // Fetch the PDF from Cloudinary using https module
+    return new Promise((resolve, reject) => {
       https.get(url, (response) => {
         if (response.statusCode !== 200) {
           console.error(`Cloudinary response error: ${response.statusCode} - ${response.statusMessage}`);
