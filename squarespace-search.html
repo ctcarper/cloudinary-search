@@ -604,7 +604,7 @@
       elements.gallery.innerHTML = results.map(item => {
         const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
         const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
-        const isPDF = item.resource_type === 'raw' && item.tags && item.tags.includes('pdf');
+        const isPDF = item.resource_type === 'image' && item.tags && item.tags.includes('pdf');
         
         let thumbnailHtml;
         if (isVideo) {
@@ -625,7 +625,7 @@
           ${isPDF ? '<div class="gallery-badge">📄 Document</div>' : ''}
           <div class="gallery-item-info">
             <div class="gallery-item-title">${escapeHtml(item.public_id)}</div>
-            <div class="gallery-item-meta">${isAudio ? item.format : (item.width + 'x' + item.height + ' • ' + item.format)}</div>
+            <div class="gallery-item-meta">${isPDF ? item.format : (isAudio ? item.format : (item.width + 'x' + item.height + ' • ' + item.format))}</div>
             ${item.tags && item.tags.length > 0 ? `
               <div class="gallery-item-tags">
                 ${item.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
@@ -682,7 +682,7 @@
     function openModal(item) {
       const isVideo = item.resource_type === 'video' && (!item.tags || !item.tags.includes('audio'));
       const isAudio = item.resource_type === 'video' && item.tags && item.tags.includes('audio');
-      const isPDF = item.resource_type === 'raw' && item.tags && item.tags.includes('pdf');
+      const isPDF = item.resource_type === 'image' && item.tags && item.tags.includes('pdf');
       
       // Hide all media elements and show the appropriate one
       document.getElementById('modalImage').style.display = 'none';

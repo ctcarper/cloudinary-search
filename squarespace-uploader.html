@@ -722,7 +722,7 @@
         }
 
         // Use correct endpoint based on resource type
-        const typeEndpoint = signData.resource_type === 'raw' ? 'raw' : 'video';
+        const typeEndpoint = signData.resource_type || 'video';
         const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${typeEndpoint}/upload`;
         console.log('Uploading to:', uploadUrl);
         

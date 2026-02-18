@@ -61,9 +61,10 @@ module.exports = async (req, res) => {
     const public_id = `tap_${Date.now()}_${(name || 'upload').replace(/\s+/g, '_')}`;
     
     // Determine resource type based on file type
+    // Note: PDFs are uploaded as 'image' type per Cloudinary documentation
     let resourceType = 'video'; // default for videos and audio
     if (isPDF) {
-      resourceType = 'raw'; // PDFs are raw documents
+      resourceType = 'image'; // PDFs are image assets in Cloudinary
     }
     
     // Parameters that will be signed - must match what gets sent to Cloudinary

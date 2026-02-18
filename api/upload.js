@@ -139,8 +139,9 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       // For audio files, use resource_type: 'video' (Cloudinary accepts audio in video container)
       options.resource_type = 'video';
     } else if (metadata.isPDF) {
-      // For PDFs, use resource_type: 'raw' (generic documents)
-      options.resource_type = 'raw';
+      // For PDFs, use resource_type: 'image' per Cloudinary documentation
+      // PDFs are uploaded as image assets, not raw documents
+      options.resource_type = 'image';
       // Add PDF tag for identification
       options.tags.push('pdf');
     } else {
