@@ -25,17 +25,19 @@ module.exports = async (req, res) => {
       });
     });
 
-    const { cloudName, publicId, fileName } = body;
+    const { cloudName, version, publicId, fileName } = body;
 
     if (!cloudName || !publicId) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: 'cloudName and publicId are required' }));
     }
 
-    // Construct permanent CDN URL (not time-limited like secure_url)
-    const url = `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`;
+    // Construct permanent CDN URL with version number (version is required for folder-based PDFs)
+    const url = version 
+      ? `https://res.cloudinary.com/${cloudName}/image/upload/${version}/${publicId}`
+      : `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`;
     
-    console.log('PDF download request - cloudName:', cloudName, 'publicId:', publicId);
+    console.log('PDF download request - cloudName:', cloudName, 'version:', version, 'publicId:', publicId);
     console.log('Full URL:', url);
 
     // Fetch the PDF from Cloudinary using https module

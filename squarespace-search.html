@@ -738,12 +738,13 @@
                 ? `${window.location.origin}/api/download-pdf`
                 : `https://cloudinary-search.vercel.app/api/download-pdf`;
               
-              // Pass cloudName and publicId to construct permanent CDN URL on server
+              // Pass cloudName, version, and publicId to construct permanent CDN URL on server
               const response = await fetch(API_DOWNLOAD_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   cloudName: cloudName,
+                  version: version,
                   publicId: publicId,
                   fileName: fileName
                 })
