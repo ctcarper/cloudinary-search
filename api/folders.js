@@ -25,70 +25,109 @@ async function getFoldersFromCloudinary() {
   try {
     const folders = new Set();
     
-    // Get root level folders
+    // Try to get root level folders
     console.log('Fetching root folders...');
-    const rootFoldersResult = await cloudinary.api.root_folders();
-    
-    if (rootFoldersResult.folders && Array.isArray(rootFoldersResult.folders)) {
-      console.log(`Found ${rootFoldersResult.folders.length} root folders`);
-      rootFoldersResult.folders.forEach(folder => {
-        folders.add(folder.name);
-      });
+    let rootFoldersResult = null;
+    try {
+      rootFoldersResult = await cloudinary.api.root_folders();
       
-      // For each root folder, get subfolders
-      for (const folder of rootFoldersResult.folders) {
-        try {
-          console.log(`Fetching subfolders for: ${folder.name}`);
-          const subFoldersResult = await cloudinary.api.sub_folders(folder.name);
-          
-          if (subFoldersResult.folders && Array.isArray(subFoldersResult.folders)) {
-            // Recursively add subfolders
-            const addSubfolders = (folderPath, folderList) => {
-              folderList.forEach(subfolder => {
-                const fullPath = folderPath ? `${folderPath}/${subfolder.name}` : subfolder.name;
-                folders.add(fullPath);
-              });
-            };
+      if (rootFoldersResult.folders && Array.isArray(rootFoldersResult.folders)) {
+        console.log(`Found ${rootFoldersResult.folders.length} root folders`);
+        rootFoldersResult.folders.forEach(folder => {
+          folders.add(folder.name);
+        });
+        
+        // For each root folder, get subfolders (recursive)
+        const getSubfolders = async (folderPath) => {
+          try {
+            const subFoldersResult = await cloudinary.api.sub_folders(folderPath);
             
-            addSubfolders(folder.name, subFoldersResult.folders);
+            if (subFoldersResult.folders && Array.isArray(subFoldersResult.folders)) {
+              for (const subfolder of subFoldersResult.folders) {
+                const fullPath = `${folderPath}/${subfolder.name}`;
+                folders.add(fullPath);
+                // Recursively get nested subfolders
+                await getSubfolders(fullPath);
+              }
+            }
+          } catch (subError) {
+            console.warn(`Could not fetch subfolders for ${folderPath}:`, subError.message);
           }
-        } catch (subError) {
-          console.warn(`Could not fetch subfolders for ${folder.name}:`, subError.message);
+        };
+        
+        // Get subfolders for each root folder
+        for (const folder of rootFoldersResult.folders) {
+          await getSubfolders(folder.name);
         }
       }
-    } else {
-      console.log('No root folders found, trying to extract from resources');
-      // Fallback: try to extract folders from resources
-      const resources = await cloudinary.api.resources({
-        type: 'upload',
-        max_results: 500,
-        resource_type: 'image'
-      });
+    } catch (rootError) {
+      console.warn('Could not fetch root folders:', rootError.message);
+    }
+
+    // Fallback/Supplement: Extract folders from all resources (images, videos, audio)
+    console.log('Extracting folders from resources...');
+    const resourceTypes = ['image', 'video', 'raw'];
+    
+    for (const resourceType of resourceTypes) {
+      let nextCursor = null;
+      let pageCount = 0;
       
-      if (resources.resources && Array.isArray(resources.resources)) {
-        resources.resources.forEach(resource => {
-          if (resource.folder) {
-            folders.add(resource.folder);
-            // Also add parent folders
-            const folderParts = resource.folder.split('/');
-            for (let i = 1; i < folderParts.length; i++) {
-              folders.add(folderParts.slice(0, i).join('/'));
-            }
+      try {
+        do {
+          pageCount++;
+          console.log(`Fetching ${resourceType}s page ${pageCount}...`);
+          
+          const resourcesParams = {
+            type: 'upload',
+            max_results: 500,
+            resource_type: resourceType
+          };
+          
+          if (nextCursor) {
+            resourcesParams.next_cursor = nextCursor;
           }
-        });
+          
+          const resources = await cloudinary.api.resources(resourcesParams);
+          
+          if (resources.resources && Array.isArray(resources.resources)) {
+            console.log(`Got ${resources.resources.length} ${resourceType}s on page ${pageCount}`);
+            resources.resources.forEach(resource => {
+              if (resource.folder) {
+                folders.add(resource.folder);
+                // Also add parent folders
+                const folderParts = resource.folder.split('/');
+                for (let i = 1; i < folderParts.length; i++) {
+                  folders.add(folderParts.slice(0, i).join('/'));
+                }
+              }
+            });
+          }
+          
+          // Check if there are more pages
+          nextCursor = resources.next_cursor || null;
+        } while (nextCursor);
+        
+        console.log(`Completed ${resourceType}, found ${pageCount} pages`);
+      } catch (resourceError) {
+        console.warn(`Error fetching ${resourceType} resources:`, resourceError.message);
       }
     }
 
     // Convert Set to sorted array
     const folderArray = Array.from(folders)
-      .sort()
-      .map(folder => ({
-        path: folder,
-        displayName: folder.split('/').pop() || folder
+      .sort((a, b) => a.localeCompare(b))
+      .map(folderPath => ({
+        path: folderPath,
+        displayName: folderPath.split('/').pop() || folderPath
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
     
-    console.log(`Total folders found: ${folderArray.length}`, folderArray.map(f => f.path));
+    console.log(`Total unique folders found: ${folderArray.length}`);
+    folderArray.slice(0, 10).forEach(f => console.log(`  - ${f.path}`));
+    if (folderArray.length > 10) {
+      console.log(`  ... and ${folderArray.length - 10} more`);
+    }
+    
     return folderArray;
   } catch (error) {
     console.error('Error fetching folders from Cloudinary:', error.message);
