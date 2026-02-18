@@ -611,9 +611,8 @@
           thumbnailHtml = '<div class="gallery-item-placeholder video">🎥</div>';
         } else if (isAudio) {
           thumbnailHtml = '<div class="gallery-item-placeholder audio">🎵</div>';
-        } else if (isPDF) {
-          thumbnailHtml = '<div class="gallery-item-placeholder pdf">📄</div>';
         } else {
+          // For images and PDFs (which are uploaded as image type), display the thumbnail
           thumbnailHtml = `<img src="${item.secure_url}" alt="${item.public_id}" loading="lazy">`;
         }
         
