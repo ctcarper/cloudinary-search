@@ -723,9 +723,11 @@
           document.getElementById('modalImage').src = previewUrl;
           document.getElementById('modalImage').style.display = 'block';
           
-          // Create download URL - add transformation flag to ensure proper serving
-          const downloadUrl = `https://res.cloudinary.com/${cloudName}/image/upload/fl_inline/${version}/${publicId}`;
+          // Create download URL using /dl transformation flag for reliable download/viewing
+          const fileName = item.public_id.split('/').pop() || 'document.pdf';
+          const downloadUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${version}/${publicId}`;
           document.getElementById('pdfDownloadLink').href = downloadUrl;
+          document.getElementById('pdfDownloadLink').download = fileName;
         }
         document.getElementById('pdfPlaceholder').style.display = 'flex';
       } else {
