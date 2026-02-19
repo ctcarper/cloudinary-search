@@ -78,17 +78,18 @@
 
     .search-btn {
       padding: 12px 24px;
-      background-color: #4CAF50;
-      color: white;
+      background-color: #C99A2C;
+      color: #f8f8f8;
       border: none;
       border-radius: 6px;
       font-size: 1rem;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background-color 0.3s, color 0.3s;
     }
 
     .search-btn:hover {
-      background-color: #45a049;
+      background-color: #444;
+      color: #fff;
     }
 
     .search-btn:disabled {
@@ -446,7 +447,7 @@
         <option value="">All Categories</option>
       </select>
       <button type="submit" class="search-btn" id="searchBtn">Search</button>
-      <button type="button" class="search-btn" id="compositesBtn" style="background-color: #2196F3;">Show Composites</button>
+      <button type="button" class="search-btn" id="compositesBtn">Show Composites</button>
     </form>
 
     <div class="loading" id="loading">Loading results...</div>
@@ -467,7 +468,7 @@
           <div id="pdfPlaceholder" class="pdf-placeholder" style="display:none;">
             <div style="font-size: 4rem; margin-bottom: 1rem;">📄</div>
             <p id="pdfMessage" style="margin: 0; color: #666;">
-              <button id="pdfDownloadButton" style="padding: 8px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Download PDF</button>
+              <button id="pdfDownloadButton" class="search-btn" style="padding: 8px 16px; font-size: 14px;">Download PDF</button>
             </p>
           </div>
         </div>
