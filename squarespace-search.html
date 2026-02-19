@@ -515,24 +515,29 @@
       // Skip if already loaded
       if (foldersLoaded) return;
       
+      // Check if folders are cached
+      const cached = localStorage.getItem('cld_folders');
+      if (cached) {
+        try {
+          const folders = JSON.parse(cached);
+          populateFolderSelect(folders);
+          foldersLoaded = true;
+          return;
+        } catch (e) {
+          console.warn('Invalid cache:', e);
+        }
+      }
+
+      // Fetch fresh if no cache
       try {
         const response = await fetch(FOLDERS_API_URL);
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
-          const select = elements.folderSelect;
-          
-          data.folders.forEach(folderPath => {
-            if (folderPath) { // Skip empty strings (root is already there)
-              const option = document.createElement('option');
-              option.value = folderPath;
-              const displayName = folderPath.split('/').pop();
-              option.textContent = displayName || folderPath;
-              select.appendChild(option);
-            }
-          });
-          
-          console.log(`Loaded ${data.folders.length} folders for search`);
+          // Cache for 24 hours (86400000 ms)
+          localStorage.setItem('cld_folders_timestamp', Date.now().toString());
+          localStorage.setItem('cld_folders', JSON.stringify(data.folders));
+          populateFolderSelect(data.folders);
           foldersLoaded = true;
         }
       } catch (error) {
@@ -540,7 +545,38 @@
       }
     }
 
-    // Load folders lazily when dropdown gets focus
+    function populateFolderSelect(folders) {
+      const select = elements.folderSelect;
+      folders.forEach(folderPath => {
+        if (folderPath) { // Skip empty strings (root is already there)
+          // Check if option already exists (avoid duplicates from cache)
+          if (!Array.from(select.options).some(opt => opt.value === folderPath)) {
+            const option = document.createElement('option');
+            option.value = folderPath;
+            const displayName = folderPath.split('/').pop();
+            option.textContent = displayName || folderPath;
+            select.appendChild(option);
+          }
+        }
+      });
+      console.log(`Loaded ${folders.length} folders for search`);
+    }
+
+    // Pre-load folders in background (non-blocking)
+    // Check if cache is fresh (24 hours)
+    const cacheTimestamp = localStorage.getItem('cld_folders_timestamp');
+    const cacheAge = cacheTimestamp ? Date.now() - parseInt(cacheTimestamp) : null;
+    const cacheExpired = !cacheAge || cacheAge > 86400000; // 24 hours
+    
+    if (cacheExpired) {
+      // Load fresh data in background
+      loadFolders().catch(err => console.error('Background folder load failed:', err));
+    } else {
+      // Load cached data immediately
+      loadFolders();
+    }
+
+    // Also load on dropdown focus as fallback
     elements.folderSelect.addEventListener('focus', loadFolders, { once: true });
 
     function showError(message) {
