@@ -489,6 +489,8 @@
       ? `${window.location.origin}/api/folders`
       : `https://cloudinary-search.vercel.app/api/folders`;
     
+    const DEFAULT_MAX_RESULTS = 100; // Maximum results per page
+    
     let currentQuery = '';
     let currentFolder = '';
     let currentCursor = null;
@@ -880,7 +882,7 @@
 
       currentCursor = null;
       searchHistory = [];
-      fetchResults(currentQuery);
+      fetchResults(currentQuery, null, DEFAULT_MAX_RESULTS);
     });
 
     // Handle folder selection - show all images in that folder
@@ -892,7 +894,7 @@
       searchHistory = [];
       
       // Fetch all images in the selected folder
-      fetchResults('');
+      fetchResults('', null, DEFAULT_MAX_RESULTS);
     });
 
     // Optional: Perform search on Enter key
@@ -909,7 +911,7 @@
       currentFolder = elements.folderSelect.value;
       currentCursor = null;
       searchHistory = [];
-      fetchResults('composite', null, 100);
+      fetchResults('composite', null, DEFAULT_MAX_RESULTS);
     });
 
     // Show initial message (no auto-load)
