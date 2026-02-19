@@ -540,8 +540,8 @@
       }
     }
 
-    // Load folders lazily when dropdown is clicked
-    elements.folderSelect.addEventListener('click', loadFolders);
+    // Load folders lazily when dropdown gets focus
+    elements.folderSelect.addEventListener('focus', loadFolders, { once: true });
 
     function showError(message) {
       elements.error.textContent = message;
