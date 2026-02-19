@@ -1,12 +1,24 @@
 /**
  * Vercel serverless function: /api/folders
  * Fetches available folders from Cloudinary Media Library
+ * Uses in-memory caching with 24-hour TTL to avoid expensive repeated calls
  */
 
 const cloudinary = require('cloudinary').v2;
 
+// In-memory cache with TTL
+let folderCache = null;
+let cacheTimestamp = null;
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
 // Get list of folders from Cloudinary
 async function getFoldersFromCloudinary() {
+  // Check if cache is still valid
+  if (folderCache && cacheTimestamp && (Date.now() - cacheTimestamp) < CACHE_TTL) {
+    console.log('Returning cached folders');
+    return folderCache;
+  }
+
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -25,19 +37,20 @@ async function getFoldersFromCloudinary() {
   try {
     const folders = new Set();
     
-    // Try to get root level folders
-    console.log('Fetching root folders...');
-    let rootFoldersResult = null;
+    // Get root level folders and subfolders via API (fast, no resource fetching)
+    console.log('Fetching folder structure from Cloudinary...');
     try {
-      rootFoldersResult = await cloudinary.api.root_folders();
+      const rootFoldersResult = await cloudinary.api.root_folders();
       
       if (rootFoldersResult.folders && Array.isArray(rootFoldersResult.folders)) {
         console.log(`Found ${rootFoldersResult.folders.length} root folders`);
+        
+        // Add root folders
         rootFoldersResult.folders.forEach(folder => {
           folders.add(folder.name);
         });
         
-        // For each root folder, get subfolders (recursive)
+        // Recursively get subfolders for each root folder
         const getSubfolders = async (folderPath) => {
           try {
             const subFoldersResult = await cloudinary.api.sub_folders(folderPath);
@@ -60,57 +73,9 @@ async function getFoldersFromCloudinary() {
           await getSubfolders(folder.name);
         }
       }
-    } catch (rootError) {
-      console.warn('Could not fetch root folders:', rootError.message);
-    }
-
-    // Fallback/Supplement: Extract folders from all resources (images, videos, audio)
-    console.log('Extracting folders from resources...');
-    const resourceTypes = ['image', 'video', 'raw'];
-    
-    for (const resourceType of resourceTypes) {
-      let nextCursor = null;
-      let pageCount = 0;
-      
-      try {
-        do {
-          pageCount++;
-          console.log(`Fetching ${resourceType}s page ${pageCount}...`);
-          
-          const resourcesParams = {
-            type: 'upload',
-            max_results: 500,
-            resource_type: resourceType
-          };
-          
-          if (nextCursor) {
-            resourcesParams.next_cursor = nextCursor;
-          }
-          
-          const resources = await cloudinary.api.resources(resourcesParams);
-          
-          if (resources.resources && Array.isArray(resources.resources)) {
-            console.log(`Got ${resources.resources.length} ${resourceType}s on page ${pageCount}`);
-            resources.resources.forEach(resource => {
-              if (resource.folder) {
-                folders.add(resource.folder);
-                // Also add parent folders
-                const folderParts = resource.folder.split('/');
-                for (let i = 1; i < folderParts.length; i++) {
-                  folders.add(folderParts.slice(0, i).join('/'));
-                }
-              }
-            });
-          }
-          
-          // Check if there are more pages
-          nextCursor = resources.next_cursor || null;
-        } while (nextCursor);
-        
-        console.log(`Completed ${resourceType}, found ${pageCount} pages`);
-      } catch (resourceError) {
-        console.warn(`Error fetching ${resourceType} resources:`, resourceError.message);
-      }
+    } catch (apiError) {
+      console.error('Error fetching folders from API:', apiError.message);
+      throw apiError;
     }
 
     // Convert Set to sorted array
@@ -127,6 +92,10 @@ async function getFoldersFromCloudinary() {
     if (folderArray.length > 10) {
       console.log(`  ... and ${folderArray.length - 10} more`);
     }
+    
+    // Cache the results
+    folderCache = folderArray;
+    cacheTimestamp = Date.now();
     
     return folderArray;
   } catch (error) {
