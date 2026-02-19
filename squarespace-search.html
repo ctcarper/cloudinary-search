@@ -509,7 +509,12 @@
     };
 
     // Load available folders
+    let foldersLoaded = false;
+
     async function loadFolders() {
+      // Skip if already loaded
+      if (foldersLoaded) return;
+      
       try {
         const response = await fetch(FOLDERS_API_URL);
         const data = await response.json();
@@ -528,14 +533,15 @@
           });
           
           console.log(`Loaded ${data.folders.length} folders for search`);
+          foldersLoaded = true;
         }
       } catch (error) {
         console.error('Error loading folders:', error);
       }
     }
 
-    // Load folders when page loads
-    loadFolders();
+    // Load folders lazily when dropdown is clicked
+    elements.folderSelect.addEventListener('click', loadFolders);
 
     function showError(message) {
       elements.error.textContent = message;
