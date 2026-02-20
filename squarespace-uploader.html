@@ -412,7 +412,8 @@
         <strong>File:</strong> <span id="processingFileName"></span><br>
         <strong>Size:</strong> <span id="processingFileSize"></span><br>
         <strong>Type:</strong> <span id="processingFileType"></span><br>
-        <strong>Progress:</strong> <span id="processingProgress">0</span> of <span id="totalToProcess">0</span>
+        <strong>Progress:</strong> <span id="processingProgress">0</span> of <span id="totalToProcess">0</span><br>
+        <strong style="color: #667eea;">🎥 Videos Uploaded:</strong> <span id="videosUploadedCount" style="color: #667eea; font-weight: bold;">0</span>
       </div>
 
       <div class="form-group">
@@ -498,6 +499,7 @@
     const message = document.getElementById('message');
     const loadingText = document.getElementById('loadingText');
     const summaryContent = document.getElementById('summaryContent');
+    const videosUploadedCount = document.getElementById('videosUploadedCount');
 
     const startUploadBtn = document.getElementById('startUploadBtn');
     const clearQueueBtn = document.getElementById('clearQueueBtn');
@@ -507,7 +509,7 @@
 
     let fileQueue = [];
     let currentFileIndex = 0;
-    let uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [] };
+    let uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [], videosUploaded: 0 };
     let batchMode = false;
     let batchFolderSelection = '';
     let batchGroupTags = '';
@@ -644,8 +646,9 @@
       }
 
       currentFileIndex = 0;
-      uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [] };
+      uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [], videosUploaded: 0 };
       totalToProcess.textContent = fileQueue.length;
+      videosUploadedCount.textContent = '0';
       
       // Check if batch mode is enabled
       batchMode = batchFolderCheckbox.checked;
@@ -877,6 +880,11 @@
 
         currentItem.status = 'uploaded';
         uploadSummary.success++;
+        // Track uploaded videos specifically
+        if (currentItem.type === 'video') {
+          uploadSummary.videosUploaded++;
+          videosUploadedCount.textContent = uploadSummary.videosUploaded;
+        }
         updateQueueDisplay();
 
         loading.classList.remove('active');
@@ -1017,6 +1025,9 @@
             <div style="font-size: 20px; font-weight: bold; color: #721c24;">${uploadSummary.failed}</div>
             <div style="font-size: 12px; color: #721c24;">Failed</div>
           </div>
+        </div>
+        <div style="background: #e7f3ff; padding: 12px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
+          <strong style="color: #003d99;">🎥 Videos in this batch:</strong> <span style="font-size: 16px; font-weight: bold; color: #667eea;">${uploadSummary.videosUploaded}</span>
         </div>
       `;
 

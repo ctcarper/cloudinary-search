@@ -30,7 +30,7 @@
     .search-header h1 {
       font-size: 2.5rem;
       margin-bottom: 10px;
-      color: #333;
+      color: white;
     }
 
     .search-header p {
@@ -168,6 +168,43 @@
 
     .gallery-item-placeholder.audio {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .audio-thumbnail-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      gap: 12px;
+    }
+
+    .audio-waveform {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 40px;
+    }
+
+    .audio-bar {
+      width: 4px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 2px;
+      animation: audioWave 0.8s ease-in-out infinite;
+    }
+
+    .audio-bar:nth-child(1) { animation-delay: 0s; height: 20%; }
+    .audio-bar:nth-child(2) { animation-delay: 0.1s; height: 40%; }
+    .audio-bar:nth-child(3) { animation-delay: 0.2s; height: 60%; }
+    .audio-bar:nth-child(4) { animation-delay: 0.3s; height: 80%; }
+    .audio-bar:nth-child(5) { animation-delay: 0.2s; height: 60%; }
+
+    @keyframes audioWave {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
     }
 
     .gallery-item-placeholder.pdf {
@@ -355,13 +392,34 @@
       height: 200px;
       margin: 20px auto;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border-radius: 12px;
       color: white;
-      font-size: 48px;
+      gap: 16px;
     }
+
+    .audio-placeholder .audio-waveform {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 60px;
+    }
+
+    .audio-placeholder .audio-bar {
+      width: 5px;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 2.5px;
+      animation: audioWave 0.8s ease-in-out infinite;
+    }
+
+    .audio-placeholder .audio-bar:nth-child(1) { animation-delay: 0s; height: 25%; }
+    .audio-placeholder .audio-bar:nth-child(2) { animation-delay: 0.1s; height: 45%; }
+    .audio-placeholder .audio-bar:nth-child(3) { animation-delay: 0.2s; height: 65%; }
+    .audio-placeholder .audio-bar:nth-child(4) { animation-delay: 0.3s; height: 80%; }
+    .audio-placeholder .audio-bar:nth-child(5) { animation-delay: 0.2s; height: 65%; }
 
     .pdf-placeholder {
       width: 100%;
@@ -429,8 +487,8 @@
 <body>
   <div class="search-container">
     <div class="search-header">
-      <h1>Search Gallery</h1>
-      <p>Select a category to view images, or search by tag</p>
+      <h1>Search Archives</h1>
+      <p>Select a category to view the archives or enter a search term.</p>
     </div>
 
     <div class="error" id="error"></div>
@@ -463,7 +521,16 @@
         <div id="modalMediaContainer">
           <img id="modalImage" class="modal-image" src="" alt="" style="display:none;">
           <video id="modalVideo" class="modal-video" controls style="display:none;"></video>
-          <div id="audioPlaceholder" class="audio-placeholder" style="display:none;">🎵</div>
+          <div id="audioPlaceholder" class="audio-placeholder" style="display:none;">
+            <div class="audio-waveform">
+              <div class="audio-bar"></div>
+              <div class="audio-bar"></div>
+              <div class="audio-bar"></div>
+              <div class="audio-bar"></div>
+              <div class="audio-bar"></div>
+            </div>
+            <div style="font-size: 2rem;">🎵 Audio</div>
+          </div>
           <audio id="modalAudio" class="modal-audio" controls style="display:none;"></audio>
           <div id="pdfPlaceholder" class="pdf-placeholder" style="display:none;">
             <div style="font-size: 4rem; margin-bottom: 1rem;">📄</div>
@@ -653,9 +720,31 @@
         
         let thumbnailHtml;
         if (isVideo) {
-          thumbnailHtml = '<div class="gallery-item-placeholder video">🎥</div>';
+          // For videos, use Cloudinary's built-in video thumbnail
+          let videoThumbnailUrl = item.secure_url;
+          // Extract cloud name and public_id from URL to build thumbnail URL
+          const urlMatch = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/video\/upload\/(v\d+)\/(.*)/);
+          if (urlMatch) {
+            const cloudName = urlMatch[1];
+            const version = urlMatch[2];
+            const publicId = urlMatch[3];
+            // Generate thumbnail from video: take frame at 1 second, scale to fit, use auto format
+            videoThumbnailUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_scale,w_500,h_500,f_auto,so_1s/${version}/${publicId}`;
+          }
+          thumbnailHtml = `<img src="${videoThumbnailUrl}" alt="${item.public_id}" loading="lazy" onerror="this.parentElement.className='gallery-item-placeholder video'; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                           <div class="audio-thumbnail-content" style="display:none;">🎥</div>`;
         } else if (isAudio) {
-          thumbnailHtml = '<div class="gallery-item-placeholder audio">🎵</div>';
+          // For audio files, use an animated waveform visualization
+          thumbnailHtml = `<div class="gallery-item-placeholder audio">
+                             <div class="audio-waveform">
+                               <div class="audio-bar"></div>
+                               <div class="audio-bar"></div>
+                               <div class="audio-bar"></div>
+                               <div class="audio-bar"></div>
+                               <div class="audio-bar"></div>
+                             </div>
+                             <div style="font-size: 1.2rem; margin-top: 8px;">🎵</div>
+                           </div>`;
         } else {
           // For PDFs, add transformation to generate a preview image
           let imageUrl = item.secure_url;
@@ -915,10 +1004,7 @@
       fetchResults('composite', null, DEFAULT_MAX_RESULTS);
     });
 
-    // Show initial message (no auto-load)
-    window.addEventListener('load', () => {
-      elements.gallery.innerHTML = '<div class="no-results">Select a category to view images or enter a search term</div>';
-    });
+
   </script>
 </body>
 </html>
