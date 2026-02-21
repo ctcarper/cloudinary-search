@@ -15,11 +15,14 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: linear-gradient(135deg, #C99A2C 0%, #B8862A 100%);
-      min-height: 100vh;
+      width: 100%;
+      height: 100vh;
       padding: 20px;
+      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
+      box-sizing: border-box;
     }
 
     .container {
@@ -445,7 +448,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>📸 Bulk Media Uploader</h1>
+    <h1><img id="headerImage" src="" alt="Coffin" style="height: 32px; vertical-align: middle; margin-right: 8px;"> Bulk Media Uploader</h1>
 
     <div id="message" class="message"></div>
 
@@ -574,6 +577,9 @@
     const API_BASE_URL = window.location.hostname === 'localhost' 
       ? `${window.location.origin}`
       : `https://cloudinary-search.vercel.app`;
+
+    // Set header image source
+    document.getElementById('headerImage').src = `${API_BASE_URL}/coffin.webp`;
 
     // Fetch folders from API
     async function loadFolders() {
