@@ -448,7 +448,7 @@
 </head>
 <body>
   <div class="container">
-    <h1><img id="headerImage" src="" alt="Coffin" style="height: 32px; vertical-align: middle; margin-right: 8px;"> Bulk Media Uploader</h1>
+    <h1>Bulk Media Uploader</h1>
 
     <div id="message" class="message"></div>
 
@@ -601,9 +601,6 @@
 
     // Check version on load
     checkVersion();
-
-    // Set header image source
-    document.getElementById('headerImage').src = '/coffin.webp';
 
     // Fetch folders from API
     async function loadFolders() {
