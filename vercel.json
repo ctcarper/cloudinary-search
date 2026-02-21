@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm install",
-  "public": "./",
+  "public": "public",
   "rewrites": [
     {
       "source": "/",

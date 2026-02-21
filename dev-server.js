@@ -33,6 +33,21 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Version endpoint
+  if (pathname === '/api/version') {
+    try {
+      const versionData = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8'));
+      res.setHeader('Content-Type', 'application/json');
+      res.writeHead(200);
+      res.end(JSON.stringify(versionData));
+    } catch (err) {
+      res.setHeader('Content-Type', 'application/json');
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Could not read version file' }));
+    }
+    return;
+  }
+
   // Route to appropriate handler
   if (pathname === '/api/search') {
     let raw = '';
@@ -259,6 +274,7 @@ server.listen(port, () => {
   console.log(`║  • http://localhost:${port}/api/upload       → Upload API         ║`);
   console.log(`║  • http://localhost:${port}/api/sign-upload  → Sign Upload Token  ║`);
   console.log(`║  • http://localhost:${port}/api/folders      → List Folders       ║`);
+  console.log(`║  • http://localhost:${port}/api/version      → Version Info       ║`);
   console.log('╠══════════════════════════════════════════════════════════════════╣');
   console.log('║ Health Check:                                                    ║');
   console.log(`║  • http://localhost:${port}/health    → API Status              ║`);

@@ -556,6 +556,34 @@
     const FOLDERS_API_URL = window.location.hostname === 'localhost' 
       ? `${window.location.origin}/api/folders`
       : `https://cloudinary-search.vercel.app/api/folders`;
+
+    const VERSION_API_URL = window.location.hostname === 'localhost' 
+      ? `${window.location.origin}/api/version`
+      : `https://cloudinary-search.vercel.app/api/version`;
+    
+    // Version checking
+    async function checkVersion() {
+      try {
+        const response = await fetch(VERSION_API_URL);
+        const versionData = await response.json();
+        const storedVersion = localStorage.getItem('appVersion');
+        const currentVersion = versionData.version;
+
+        if (storedVersion && storedVersion !== currentVersion) {
+          console.log(`Version update detected: ${storedVersion} → ${currentVersion}. Reloading...`);
+          localStorage.setItem('appVersion', currentVersion);
+          // Reload with cache bust
+          window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+        } else if (!storedVersion) {
+          localStorage.setItem('appVersion', currentVersion);
+        }
+      } catch (err) {
+        console.warn('Could not check version:', err.message);
+      }
+    }
+
+    // Check version on load
+    checkVersion();
     
     const DEFAULT_MAX_RESULTS = 100; // Maximum results per page
     
