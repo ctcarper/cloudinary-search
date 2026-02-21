@@ -600,14 +600,7 @@
 
       // Fetch fresh if no cache
       try {
-        const response = await fetch(FOLDERS_API_URL + `?t=${Date.now()}`, {
-          method: 'GET',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          cache: 'no-store'
-        });
+        const response = await fetch(FOLDERS_API_URL + `?t=${Date.now()}`);
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {

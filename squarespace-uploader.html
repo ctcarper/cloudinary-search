@@ -580,14 +580,7 @@
       try {
         const foldersUrl = `${API_BASE_URL}/api/folders?t=${Date.now()}`;
         console.log('Loading folders from:', foldersUrl);
-        const response = await fetch(foldersUrl, {
-          method: 'GET',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          cache: 'no-store'
-        });
+        const response = await fetch(foldersUrl);
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
