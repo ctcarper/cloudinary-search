@@ -600,7 +600,14 @@
 
       // Fetch fresh if no cache
       try {
-        const response = await fetch(FOLDERS_API_URL);
+        const response = await fetch(FOLDERS_API_URL + `?t=${Date.now()}`, {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store'
+        });
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
@@ -633,13 +640,16 @@
     }
 
     // Pre-load folders in background (non-blocking)
-    // Check if cache is fresh (24 hours)
+    // Check if cache is fresh (1 hour instead of 24 for more frequent updates)
     const cacheTimestamp = localStorage.getItem('cld_folders_timestamp');
     const cacheAge = cacheTimestamp ? Date.now() - parseInt(cacheTimestamp) : null;
-    const cacheExpired = !cacheAge || cacheAge > 86400000; // 24 hours
+    const cacheExpired = !cacheAge || cacheAge > 3600000; // 1 hour instead of 24
     
     if (cacheExpired) {
       // Load fresh data in background
+      // Also clear old cache to force refresh
+      localStorage.removeItem('cld_folders');
+      localStorage.removeItem('cld_folders_timestamp');
       loadFolders().catch(err => console.error('Background folder load failed:', err));
     } else {
       // Load cached data immediately

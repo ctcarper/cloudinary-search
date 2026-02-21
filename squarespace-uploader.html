@@ -14,7 +14,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #C99A2C 0%, #B8862A 100%);
       min-height: 100vh;
       padding: 20px;
       display: flex;
@@ -47,7 +47,7 @@
     }
 
     .dropzone {
-      border: 3px dashed #667eea;
+      border: 3px dashed #C99A2C;
       border-radius: 8px;
       padding: 40px 20px;
       text-align: center;
@@ -57,13 +57,13 @@
     }
 
     .dropzone:hover {
-      border-color: #764ba2;
-      background: #ede9ff;
+      border-color: #B8862A;
+      background: #fef4e7;
     }
 
     .dropzone.dragover {
-      border-color: #764ba2;
-      background: #ede9ff;
+      border-color: #B8862A;
+      background: #fef4e7;
       transform: scale(1.02);
     }
 
@@ -136,9 +136,9 @@
 
     textarea:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #C99A2C;
       background: white;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 3px rgba(201, 154, 44, 0.1);
     }
 
     input[type="text"] {
@@ -152,8 +152,8 @@
 
     input[type="text"]:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: #C99A2C;
+      box-shadow: 0 0 0 3px rgba(201, 154, 44, 0.1);
     }
 
     select {
@@ -169,8 +169,8 @@
 
     select:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: #C99A2C;
+      box-shadow: 0 0 0 3px rgba(201, 154, 44, 0.1);
     }
 
     .button-group {
@@ -193,13 +193,14 @@
     }
 
     .btn-upload {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: #C99A2C;
+      color: #f8f8f8;
     }
 
     .btn-upload:hover:not(:disabled) {
+      background-color: #444;
       transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     }
 
     .btn-upload:disabled {
@@ -220,17 +221,13 @@
       display: none;
       text-align: center;
       padding: 20px;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255, 255, 255, 0.95);
+      background: transparent;
       border-radius: 8px;
-      z-index: 10;
-      flex-direction: column;
+      z-index: 1;
+      flex-direction: row;
       justify-content: center;
       align-items: center;
+      gap: 15px;
     }
 
     .loading.active {
@@ -239,7 +236,7 @@
 
     .spinner {
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #667eea;
+      border-top: 4px solid #C99A2C;
       border-radius: 50%;
       width: 40px;
       height: 40px;
@@ -304,8 +301,8 @@
     }
 
     .queue-item.uploading {
-      background: #ede9ff;
-      border-color: #667eea;
+      background: #fef4e7;
+      border-color: #C99A2C;
     }
 
     .queue-item.uploaded {
@@ -329,6 +326,121 @@
       font-size: 12px;
       font-weight: 600;
     }
+
+    .file-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      background: #f8f9fa;
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
+      gap: 15px;
+      align-items: start;
+    }
+
+    .file-card-preview {
+      width: 100px;
+      height: 100px;
+      border-radius: 6px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid #ddd;
+    }
+
+    .file-card-preview img,
+    .file-card-preview video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .file-card-preview-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      background: linear-gradient(135deg, #C99A2C 0%, #B8862A 100%);
+      color: white;
+    }
+
+    .file-card-content {
+      display: grid;
+      gap: 12px;
+    }
+
+    .file-card-header {
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .file-card-header-right {
+      font-size: 12px;
+      color: #999;
+      font-weight: 400;
+    }
+
+    .file-card-fields {
+      display: grid;
+      gap: 10px;
+    }
+
+    .file-card-field {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .file-card-field label {
+      margin: 0;
+      font-size: 12px;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 500;
+      color: #666;
+    }
+
+    .file-card-field input,
+    .file-card-field select {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .file-card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-remove {
+      background: #dc3545;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn-remove:hover {
+      background: #c82333;
+    }
+
+    .btn-remove:disabled {
+      background: #ddd;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -347,139 +459,75 @@
       <input type="file" id="fileInput" accept="image/*,video/*,audio/*,application/pdf" multiple>
     </div>
 
-    <!-- Queue Section -->
-    <div id="queueSection" class="preview-section">
+    <!-- Combined File Selection & Metadata Section -->
+    <div id="combinedSection" class="preview-section">
       <div class="form-group">
-        <label>Files to Upload (<span id="queueCount">0</span>)</label>
-        <div id="fileQueue" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px;">
+        <label>Files to Upload (<span id="fileCount">0</span>)</label>
+        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px;">
+          <div id="filesList" style="display: grid; gap: 15px;">
+          </div>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="queueFolderSelect">Media Library Folder</label>
-        <select id="queueFolderSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">
+        <label for="batchFolderSelect">Default Media Library Folder</label>
+        <select id="batchFolderSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">
           <option value="">Loading folders...</option>
         </select>
-        <div class="hint-text">Select which folder to upload files to</div>
+        <div class="hint-text">Set a default folder for all files (can be overridden per file)</div>
       </div>
 
       <div class="form-group">
-        <label for="queueGroupTags">Group Tags (Optional)</label>
-        <input type="text" id="queueGroupTags" placeholder="e.g., Event 2024, Winter Collection, Project A" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-        <div class="hint-text">Add tags to be applied to all files in this upload (comma-separated)</div>
-      </div>
-
-      <div class="form-group" style="margin-top: 15px;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" id="batchFolderCheckbox" style="cursor: pointer; width: 16px; height: 16px;">
-          <span>Use selected folder and tags for all files (skip prompts)</span>
-        </label>
-        <div class="hint-text">When checked, uploads use the selected folder and group tags without re-prompting</div>
+        <label for="batchTagsInput">Default Tags (Optional)</label>
+        <input type="text" id="batchTagsInput" placeholder="e.g., Event 2024, Winter Collection, Project A" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+        <div class="hint-text">Tags to apply to all files (can be overridden per file)</div>
       </div>
 
       <div class="button-group">
-        <button class="btn-upload" id="startUploadBtn">Upload All</button>
-        <button class="btn-cancel" id="clearQueueBtn">Clear Queue</button>
+        <button class="btn-upload" id="uploadAllBtn">Upload All Files</button>
+        <button class="btn-cancel" id="clearAllBtn">Clear Queue</button>
       </div>
     </div>
 
-    <!-- Current File Processing Section -->
-    <div id="processingSection" class="preview-section">
-      <!-- Progress header -->
-      <div id="progressHeader" style="display: none; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+    <!-- Upload Progress Section -->
+    <div id="progressSection" class="preview-section">
+      <div style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #C99A2C 0%, #B8862A 100%); border-radius: 8px; color: white;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
           <div>
             <div style="font-size: 14px; opacity: 0.9;">Upload Progress</div>
-            <div style="font-size: 24px; font-weight: bold;">File <span id="processingProgress">0</span> of <span id="processingTotal">0</span></div>
+            <div style="font-size: 24px; font-weight: bold;">File <span id="uploadProgress">0</span> of <span id="uploadTotal">0</span></div>
           </div>
           <div style="text-align: right;">
             <div style="font-size: 14px; opacity: 0.9;">Videos Uploaded</div>
-            <div style="font-size: 24px; font-weight: bold;" id="videosUploadedCount">0</div>
+            <div style="font-size: 24px; font-weight: bold;" id="totalVideosUploaded">0</div>
           </div>
         </div>
         <div style="background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px; overflow: hidden;">
-          <div id="progressBar" style="background: white; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+          <div id="uploadProgressBar" style="background: white; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px;">
+          <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+            <div style="font-size: 12px; opacity: 0.9;">Uploaded</div>
+            <div style="font-size: 18px; font-weight: bold;" id="realtimeSuccess">0</div>
+          </div>
+          <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+            <div style="font-size: 12px; opacity: 0.9;">Failed</div>
+            <div style="font-size: 18px; font-weight: bold;" id="realtimeFailed">0</div>
+          </div>
+          <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+            <div style="font-size: 12px; opacity: 0.9;">Skipped</div>
+            <div style="font-size: 18px; font-weight: bold;" id="realtimeSkipped">0</div>
+          </div>
         </div>
       </div>
 
-      <!-- Loading/Spinner Overlay (positioned absolutely within processingSection) -->
-      <div id="loading" class="loading">
+      <div id="loading" class="loading" style="position: static; background: transparent; display: flex; justify-content: center; align-items: center; padding: 20px; gap: 15px; margin-bottom: 20px; display: none;">
         <div class="spinner"></div>
-        <div id="loadingText">Processing your image...</div>
+        <div id="loadingText" style="color: #333; font-weight: 500;">Processing file...</div>
       </div>
 
-      <img id="processingImage" class="preview-image" alt="Preview" style="display: none;">
-      <video id="processingVideo" class="preview-image" controls style="display: none;"></video>
-      
-      <div id="pdfPlaceholder" style="display: none; text-align: center; margin-bottom: 20px;">
-        <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); width: 120px; height: 150px; margin: 20px auto; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);">
-          <div style="color: white; font-size: 48px; font-weight: bold;">📄</div>
-        </div>
-        <div style="color: #666; font-size: 14px; font-weight: 600;">PDF Document</div>
-      </div>
-      
-      <div id="audioPlaceholder" style="display: none; text-align: center; margin-bottom: 20px;">
-        <svg width="120" height="120" viewBox="0 0 120 120" style="margin: 20px auto; display: block;">
-          <!-- Speaker/Music Icon -->
-          <circle cx="60" cy="60" r="55" fill="none" stroke="#667eea" stroke-width="2"/>
-          <circle cx="60" cy="60" r="50" fill="#f8f9ff"/>
-          
-          <!-- Music note elements -->
-          <g transform="translate(35, 35)">
-            <!-- First note -->
-            <ellipse cx="10" cy="35" rx="6" ry="8" fill="#667eea"/>
-            <line x1="16" y1="10" x2="16" y2="35" stroke="#667eea" stroke-width="2"/>
-            
-            <!-- Second note -->
-            <ellipse cx="30" cy="30" rx="6" ry="8" fill="#764ba2"/>
-            <line x1="36" y1="5" x2="36" y2="30" stroke="#764ba2" stroke-width="2"/>
-            
-            <!-- Connecting line -->
-            <path d="M 16 10 Q 26 5 36 5" stroke="#667eea" stroke-width="2" fill="none"/>
-          </g>
-        </svg>
-        <div style="color: #666; font-size: 14px; font-weight: 600;">🎵 Audio File</div>
-      </div>
-      
-      <audio id="processingAudio" controls style="width: 100%; margin-bottom: 20px; display: none;"></audio>
-      
-      <div class="file-info">
-        <strong>File:</strong> <span id="processingFileName"></span><br>
-        <strong>Size:</strong> <span id="processingFileSize"></span><br>
-        <strong>Type:</strong> <span id="processingFileType"></span><br>
-        <strong>Progress:</strong> <span id="processingProgress">0</span> of <span id="totalToProcess">0</span><br>
-        <strong style="color: #667eea;">🎥 Videos Uploaded:</strong> <span id="videosUploadedCount" style="color: #667eea; font-weight: bold;">0</span>
-      </div>
-
-      <div class="form-group">
-        <label for="processingMediaName">Media Name *</label>
-        <input type="text" id="processingMediaName" placeholder="e.g., Sample Media Name" required>
-        <div class="hint-text">This will be stored in media metadata</div>
-      </div>
-
-      <div class="form-group">
-        <label for="folderSelect">Media Library Folder</label>
-        <select id="folderSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">
-          <option value="">Loading folders...</option>
-        </select>
-        <div class="hint-text">Select which folder to upload this media to</div>
-      </div>
-
-      <div class="form-group">
-        <label for="processingGroupTags">Additional Tags (Optional)</label>
-        <input type="text" id="processingGroupTags" placeholder="e.g., Event 2024, Winter Collection" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-        <div class="hint-text">Add comma-separated tags for this file (group tags will be added automatically)</div>
-      </div>
-
-      <div class="form-group" id="ocrSection" style="display: none;">
-        <label for="processingOcrText">OCR Text (extracted from image)</label>
-        <textarea id="processingOcrText" readonly placeholder="Text will appear here after upload..."></textarea>
-        <div class="hint-text">ℹ️ Will be converted to searchable tags</div>
-      </div>
-
-      <div class="button-group">
-        <button class="btn-upload" id="uploadCurrentBtn">Upload This & Continue</button>
-        <button class="btn-cancel" id="skipCurrentBtn">Skip & Continue</button>
+      <div id="currentFileStatus" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none;">
+        <strong>Currently uploading: <span id="currentFileName"></span></strong>
       </div>
     </div>
 
@@ -501,47 +549,26 @@
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const uploadSection = document.getElementById('uploadSection');
-    const queueSection = document.getElementById('queueSection');
-    const processingSection = document.getElementById('processingSection');
+    const combinedSection = document.getElementById('combinedSection');
+    const progressSection = document.getElementById('progressSection');
     const summarySection = document.getElementById('summarySection');
     const loading = document.getElementById('loading');
     
-    const fileQueueDiv = document.getElementById('fileQueue');
-    const queueCount = document.getElementById('queueCount');
-    const processingImage = document.getElementById('processingImage');
-    const processingVideo = document.getElementById('processingVideo');
-    const processingAudio = document.getElementById('processingAudio');
-    const audioPlaceholder = document.getElementById('audioPlaceholder');
-    const processingFileName = document.getElementById('processingFileName');
-    const processingFileSize = document.getElementById('processingFileSize');
-    const processingFileType = document.getElementById('processingFileType');
-    const processingMediaName = document.getElementById('processingMediaName');
-    const processingOcrText = document.getElementById('processingOcrText');
-    const processingGroupTags = document.getElementById('processingGroupTags');
-    const processingProgress = document.getElementById('processingProgress');
-    const totalToProcess = document.getElementById('totalToProcess');
-    const folderSelect = document.getElementById('folderSelect');
-    const queueFolderSelect = document.getElementById('queueFolderSelect');
-    const queueGroupTags = document.getElementById('queueGroupTags');
-    const ocrSection = document.getElementById('ocrSection');
-    const batchFolderCheckbox = document.getElementById('batchFolderCheckbox');
+    const filesList = document.getElementById('filesList');
+    const fileCount = document.getElementById('fileCount');
+    const batchFolderSelect = document.getElementById('batchFolderSelect');
+    const batchTagsInput = document.getElementById('batchTagsInput');
     const message = document.getElementById('message');
     const loadingText = document.getElementById('loadingText');
     const summaryContent = document.getElementById('summaryContent');
-    const videosUploadedCount = document.getElementById('videosUploadedCount');
+    const totalVideosUploaded = document.getElementById('totalVideosUploaded');
 
-    const startUploadBtn = document.getElementById('startUploadBtn');
-    const clearQueueBtn = document.getElementById('clearQueueBtn');
-    const uploadCurrentBtn = document.getElementById('uploadCurrentBtn');
-    const skipCurrentBtn = document.getElementById('skipCurrentBtn');
+    const uploadAllBtn = document.getElementById('uploadAllBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
     const uploadMoreBtn = document.getElementById('uploadMoreBtn');
 
     let fileQueue = [];
-    let currentFileIndex = 0;
     let uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [], videosUploaded: 0 };
-    let batchMode = false;
-    let batchFolderSelection = '';
-    let batchGroupTags = '';
 
     // Determine API base URL based on environment
     const API_BASE_URL = window.location.hostname === 'localhost' 
@@ -551,25 +578,29 @@
     // Fetch folders from API
     async function loadFolders() {
       try {
-        const foldersUrl = `${API_BASE_URL}/api/folders`;
+        const foldersUrl = `${API_BASE_URL}/api/folders?t=${Date.now()}`;
         console.log('Loading folders from:', foldersUrl);
-        const response = await fetch(foldersUrl);
+        const response = await fetch(foldersUrl, {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store'
+        });
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
-          // Function to populate a select element
           const populateSelect = (selectElement) => {
             selectElement.innerHTML = '';
             
-            // Add root folder option
             const rootOption = document.createElement('option');
             rootOption.value = '';
             rootOption.textContent = '📁 Root Folder';
             selectElement.appendChild(rootOption);
             
-            // Add other folders
             data.folders.forEach(folderPath => {
-              if (folderPath) { // Skip empty strings (already added as root)
+              if (folderPath) {
                 const option = document.createElement('option');
                 option.value = folderPath;
                 const displayName = folderPath.split('/').pop();
@@ -579,26 +610,25 @@
             });
           };
           
-          // Populate both dropdowns
-          populateSelect(folderSelect);
-          populateSelect(queueFolderSelect);
-          
+          populateSelect(batchFolderSelect);
           console.log(`Loaded ${data.folders.length} folders`);
         } else {
           console.warn('No folders in response:', data);
-          folderSelect.innerHTML = '<option value="">Root Folder</option>';
-          queueFolderSelect.innerHTML = '<option value="">Root Folder</option>';
+          batchFolderSelect.innerHTML = '<option value="">Root Folder</option>';
         }
       } catch (error) {
         console.error('Error loading folders:', error);
-        // Set fallback option if fetch fails
-        folderSelect.innerHTML = '<option value="">Root Folder (error loading)</option>';
-        queueFolderSelect.innerHTML = '<option value="">Root Folder (error loading)</option>';
+        batchFolderSelect.innerHTML = '<option value="">Root Folder (error loading)</option>';
       }
     }
 
-    // Load folders when page loads
     loadFolders();
+
+    // Function to manually refresh folders (useful when new folders are added)
+    window.refreshFolders = function() {
+      console.log('Refreshing folders...');
+      loadFolders();
+    };
 
     // Dropzone listeners
     dropzone.addEventListener('click', () => fileInput.click());
@@ -641,81 +671,311 @@
         file,
         name: file.name.replace(/\.[^/.]+$/, ''),
         status: 'pending',
-        type: file.type === 'application/pdf' ? 'pdf' : file.type.split('/')[0] // 'image', 'video', 'audio', or 'pdf'
+        type: file.type === 'application/pdf' ? 'pdf' : file.type.split('/')[0],
+        mediaName: file.name.replace(/\.[^/.]+$/, ''),
+        folder: '',
+        tags: '',
+        ocrText: ''
       }));
 
-      updateQueueDisplay();
+      renderFilesList();
       uploadSection.classList.remove('active');
-      queueSection.classList.add('active');
+      combinedSection.classList.add('active');
       fileInput.value = '';
     }
 
-    function updateQueueDisplay() {
-      queueCount.textContent = fileQueue.length;
-      fileQueueDiv.innerHTML = fileQueue.map((item, idx) => `
-        <div class="queue-item ${item.status}" id="queue-${idx}">
-          <div class="queue-item-name">${idx + 1}. ${item.file.name}</div>
-          <div class="queue-item-status">${item.status}</div>
+    function renderFilesList() {
+      fileCount.textContent = fileQueue.length;
+      filesList.innerHTML = fileQueue.map((item, idx) => `
+        <div class="file-card" id="file-${idx}">
+          <div class="file-card-preview">
+            ${getPreviewElement(item, idx)}
+          </div>
+          <div class="file-card-content">
+            <div class="file-card-header">
+              <span>${item.file.name}</span>
+              <span class="file-card-header-right">${(item.file.size / 1024).toFixed(2)} KB</span>
+            </div>
+            <div class="file-card-fields">
+              <div class="file-card-field">
+                <label>Name *</label>
+                <input type="text" class="file-media-name" data-idx="${idx}" value="${item.mediaName}" placeholder="Media name">
+              </div>
+              <div class="file-card-field">
+                <label>Folder</label>
+                <select class="file-folder" data-idx="${idx}" value="${item.folder}">
+                  <option value="">📁 Root</option>
+                  ${getAllFolderOptions()}
+                </select>
+              </div>
+              <div class="file-card-field">
+                <label>Tags</label>
+                <input type="text" class="file-tags" data-idx="${idx}" value="${item.tags}" placeholder="e.g., tag1, tag2">
+              </div>
+            </div>
+          </div>
+          <div class="file-card-actions">
+            <button class="btn-remove" data-idx="${idx}">Remove</button>
+          </div>
         </div>
       `).join('');
+
+      // Add event listeners for file card inputs
+      document.querySelectorAll('.file-media-name').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const idx = e.target.dataset.idx;
+          fileQueue[idx].mediaName = e.target.value;
+        });
+      });
+
+      document.querySelectorAll('.file-folder').forEach(select => {
+        select.addEventListener('change', (e) => {
+          const idx = e.target.dataset.idx;
+          fileQueue[idx].folder = e.target.value;
+        });
+      });
+
+      document.querySelectorAll('.file-tags').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const idx = e.target.dataset.idx;
+          fileQueue[idx].tags = e.target.value;
+        });
+      });
+
+      document.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = e.target.dataset.idx;
+          fileQueue.splice(idx, 1);
+          renderFilesList();
+        });
+      });
+
+      // Load image/video previews
+      fileQueue.forEach((item, idx) => {
+        if (item.type === 'image' || item.type === 'video') {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setTimeout(() => {
+              const previewEl = document.getElementById(`preview-${idx}`);
+              if (previewEl) {
+                previewEl.src = e.target.result;
+              }
+            }, 100);
+          };
+          reader.readAsDataURL(item.file);
+        }
+      });
     }
 
-    clearQueueBtn.addEventListener('click', () => {
+    function getPreviewElement(item, idx) {
+      const previewId = `preview-${idx}`;
+      const file = item.file;
+      
+      if (item.type === 'image') {
+        return `<img id="${previewId}" src="" alt="Preview">`;
+      } else if (item.type === 'video') {
+        return `<video id="${previewId}" style="width:100%; height:100%; object-fit: cover;"></video>`;
+      } else if (item.type === 'audio') {
+        return `<div class="file-card-preview-placeholder">🎵</div>`;
+      } else if (item.type === 'pdf') {
+        return `<div class="file-card-preview-placeholder">📄</div>`;
+      }
+      return `<div class="file-card-preview-placeholder">📁</div>`;
+    }
+
+    function getAllFolderOptions() {
+      const options = [];
+      const folders = batchFolderSelect.querySelectorAll('option');
+      folders.forEach(option => {
+        if (option.value !== '') {
+          options.push(`<option value="${option.value}">${option.textContent}</option>`);
+        }
+      });
+      return options.join('');
+    }
+
+    clearAllBtn.addEventListener('click', () => {
       fileQueue = [];
-      resetBatchMode();
-      queueSection.classList.remove('active');
+      combinedSection.classList.remove('active');
       uploadSection.classList.add('active');
       resetMessage();
     });
 
-    startUploadBtn.addEventListener('click', () => {
-      if (fileQueue.length === 0) {
-        showMessage('No files in queue', 'error');
-        return;
+    uploadAllBtn.addEventListener('click', async () => {
+      // Validate all files have media names
+      for (let i = 0; i < fileQueue.length; i++) {
+        if (!fileQueue[i].mediaName.trim()) {
+          showMessage(`File ${i + 1} requires a media name`, 'error');
+          return;
+        }
       }
 
-      currentFileIndex = 0;
       uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [], videosUploaded: 0 };
-      totalToProcess.textContent = fileQueue.length;
-      document.getElementById('processingTotal').textContent = fileQueue.length;
-      videosUploadedCount.textContent = '0';
+      totalVideosUploaded.textContent = '0';
+      document.getElementById('uploadTotal').textContent = fileQueue.length;
       
-      // Check if batch mode is enabled
-      batchMode = batchFolderCheckbox.checked;
-      if (batchMode) {
-        batchFolderSelection = queueFolderSelect.value;
-        batchGroupTags = queueGroupTags.value.trim();
-        folderSelect.disabled = true; // Lock folder during batch upload
-        document.getElementById('progressHeader').style.display = 'block';
-      }
+      // Initialize real-time counters
+      document.getElementById('uploadProgress').textContent = '0';
+      document.getElementById('realtimeSuccess').textContent = '0';
+      document.getElementById('realtimeFailed').textContent = '0';
+      document.getElementById('realtimeSkipped').textContent = '0';
       
-      queueSection.classList.remove('active');
-      processNextFile();
+      combinedSection.classList.remove('active');
+      progressSection.classList.add('active');
+
+      await uploadAllFiles();
     });
 
-    uploadCurrentBtn.addEventListener('click', async () => {
-      if (!processingMediaName.value.trim()) {
-        showMessage('Please enter a media name', 'error');
-        return;
+    async function uploadAllFiles() {
+      for (let i = 0; i < fileQueue.length; i++) {
+        await uploadFile(i);
       }
-      await performUpload();
-    });
 
-    // Direct upload to Cloudinary for large files (bypasses serverless function payload limits)
-    async function uploadDirectToCloudinary(file, name, folder, isAudio, isPDF) {
+      progressSection.classList.remove('active');
+      showUploadSummary();
+    }
+
+    async function uploadFile(idx) {
+      const item = fileQueue[idx];
+      
       try {
-        const fileSizeMB = file.size / (1024 * 1024);
+        document.getElementById('uploadProgress').textContent = idx + 1;
+        document.getElementById('currentFileName').textContent = item.file.name;
+        document.getElementById('currentFileStatus').style.display = 'block';
+        loading.classList.add('active');
+
+        const fileSizeMB = item.file.size / (1024 * 1024);
+        let data;
+
+        // For large files (>100MB), use direct upload to bypass serverless limits
+        if (fileSizeMB > 100 && item.type !== 'image') {
+          console.log(`File is ${fileSizeMB.toFixed(2)}MB - using direct upload`);
+          data = await uploadDirectToCloudinary(item);
+          if (!data.success) {
+            throw new Error('Direct upload failed');
+          }
+        } else {
+          // Use server upload for small files or images
+          data = await uploadViaServer(item);
+        }
+
+        item.status = 'uploaded';
+        uploadSummary.success++;
+        if (item.type === 'video') {
+          uploadSummary.videosUploaded++;
+          totalVideosUploaded.textContent = uploadSummary.videosUploaded;
+        }
+
+        // Update real-time counters
+        document.getElementById('realtimeSuccess').textContent = uploadSummary.success;
+
+        // Update progress
+        const progress = ((idx + 1) / fileQueue.length) * 100;
+        document.getElementById('uploadProgressBar').style.width = progress + '%';
+
+      } catch (error) {
+        console.error(`Upload error for file ${idx}:`, error);
+        item.status = 'error';
+        uploadSummary.failed++;
+        uploadSummary.errors.push(`${item.file.name}: ${error.message}`);
         
-        // Get signature from our server
+        // Update real-time failed counter
+        document.getElementById('realtimeFailed').textContent = uploadSummary.failed;
+        
+        // Continue to next file instead of stopping
+      } finally {
+        loading.classList.remove('active');
+      }
+    }
+
+    async function uploadViaServer(item) {
+      const formData = new FormData();
+      formData.append('file', item.file);
+      formData.append('name', item.mediaName);
+      
+      // Use individual file folder if set, otherwise use global batch folder
+      const folderToUse = item.folder || batchFolderSelect.value;
+      if (folderToUse) {
+        formData.append('folder', folderToUse);
+      }
+
+      let allTags = [];
+      if (batchTagsInput.value.trim()) {
+        allTags = allTags.concat(
+          batchTagsInput.value.trim().split(',').map(t => t.trim()).filter(t => t)
+        );
+      }
+      if (item.tags.trim()) {
+        allTags = allTags.concat(
+          item.tags.trim().split(',').map(t => t.trim()).filter(t => t)
+        );
+      }
+
+      if (allTags.length > 0) {
+        formData.append('tags', JSON.stringify(allTags));
+      }
+
+      const uploadUrl = `${API_BASE_URL}/api/upload`;
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `Upload failed (${response.status})`;
+        
+        try {
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const errorText = await response.text();
+            errorMessage = errorText || errorMessage;
+          }
+        } catch (e) {
+          errorMessage = `Server error (${response.status})`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const responseText = await response.text();
+      if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+      
+      return JSON.parse(responseText);
+    }
+
+    async function uploadDirectToCloudinary(item) {
+      try {
+        // Use individual file folder if set, otherwise use global batch folder
+        const folderToUse = item.folder || batchFolderSelect.value;
+        
+        // Gather tags from batch and individual levels
+        let allTags = [];
+        if (batchTagsInput.value.trim()) {
+          allTags = allTags.concat(
+            batchTagsInput.value.trim().split(',').map(t => t.trim()).filter(t => t)
+          );
+        }
+        if (item.tags.trim()) {
+          allTags = allTags.concat(
+            item.tags.trim().split(',').map(t => t.trim()).filter(t => t)
+          );
+        }
+        
         const signUrl = `${API_BASE_URL}/api/sign-upload`;
         const signResponse = await fetch(signUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            folder,
-            name,
-            isAudio,
-            isPDF
+            folder: folderToUse,
+            name: item.mediaName,
+            isAudio: item.type === 'audio',
+            isPDF: item.type === 'pdf',
+            tags: allTags.length > 0 ? allTags : undefined
           })
         });
 
@@ -725,27 +985,30 @@
         }
 
         const signData = await signResponse.json();
-        console.log('Signature data:', signData);
         
-        // Build form data for Cloudinary
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', item.file);
         formData.append('api_key', signData.apiKey);
         formData.append('timestamp', signData.timestamp.toString());
         formData.append('signature', signData.signature);
         formData.append('public_id', signData.public_id);
         formData.append('resource_type', signData.resource_type || 'video');
         
-        // Add context and tags individually
         if (signData.context) {
           formData.append('context', signData.context);
         }
         
         if (signData.tags) {
-          // Tags might be a string or array
           const tagsArray = typeof signData.tags === 'string' 
             ? signData.tags.split(',') 
             : signData.tags;
+          
+          // Add batch tags if any
+          if (batchTagsInput.value.trim()) {
+            const batchTags = batchTagsInput.value.trim().split(',').map(t => t.trim());
+            tagsArray.push(...batchTags);
+          }
+          
           tagsArray.forEach((tag, index) => {
             formData.append(`tags[${index}]`, tag.trim());
           });
@@ -755,10 +1018,8 @@
           formData.append('folder', signData.folder);
         }
 
-        // Use correct endpoint based on resource type
         const typeEndpoint = signData.resource_type || 'video';
         const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${typeEndpoint}/upload`;
-        console.log('Uploading to:', uploadUrl);
         
         const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
@@ -778,14 +1039,12 @@
         }
 
         const result = await uploadResponse.json();
-        console.log('Direct upload successful:', result);
-        
         return {
           success: true,
           publicId: result.public_id,
           secureUrl: result.secure_url,
-          name: name,
-          tags: result.tags || [name],
+          name: item.mediaName,
+          tags: result.tags || [item.mediaName],
           metadata: {
             width: result.width,
             height: result.height,
@@ -800,274 +1059,8 @@
       }
     }
 
-    // Perform the actual upload (can be called manually or automatically in batch mode)
-    async function performUpload() {
-      uploadCurrentBtn.disabled = true;
-      skipCurrentBtn.disabled = true;
-
-      try {
-        processingSection.classList.remove('active');
-        loading.classList.add('active');
-
-        const currentItem = fileQueue[currentFileIndex];
-        const fileSizeMB = currentItem.file.size / (1024 * 1024);
-        
-        // Set loading text based on file type and size
-        const sizeInfo = fileSizeMB > 100 ? '(direct upload)' : '';
-        if (currentItem.type === 'image') {
-          loadingText.textContent = `Uploading and processing with OCR ${sizeInfo}...`;
-        } else if (currentItem.type === 'pdf') {
-          loadingText.textContent = `Uploading PDF document ${sizeInfo}...`;
-        } else {
-          loadingText.textContent = `Uploading ${currentItem.type} ${sizeInfo}...`;
-        }
-
-        const folderToUse = batchMode ? batchFolderSelection : folderSelect.value;
-        const mediaName = processingMediaName.value.trim();
-
-        let data;
-
-        // For large files (>100MB), use direct upload to bypass serverless limits
-        if (fileSizeMB > 100 && currentItem.type !== 'image') {
-          console.log(`File is ${fileSizeMB.toFixed(2)}MB - using direct upload`);
-          data = await uploadDirectToCloudinary(
-            currentItem.file,
-            mediaName,
-            folderToUse,
-            currentItem.type === 'audio',
-            currentItem.type === 'pdf'
-          );
-          if (!data.success) {
-            throw new Error('Direct upload failed');
-          }
-        } else {
-          // Use server upload for small files or images (need OCR processing)
-          const formData = new FormData();
-          formData.append('file', currentItem.file);
-          formData.append('name', mediaName);
-          
-          if (currentItem.type === 'image' && processingOcrText.value.trim()) {
-            formData.append('ocrText', processingOcrText.value.trim());
-          }
-          
-          if (folderToUse) {
-            formData.append('folder', folderToUse);
-          }
-
-          // Add group tags and file-specific tags
-          let allTags = [];
-          
-          // Add batch mode group tags if enabled
-          if (batchMode && batchGroupTags) {
-            allTags = allTags.concat(
-              batchGroupTags.split(',').map(t => t.trim()).filter(t => t)
-            );
-          }
-          
-          // Add individual file tags (from processingGroupTags)
-          if (processingGroupTags.value.trim()) {
-            allTags = allTags.concat(
-              processingGroupTags.value.trim().split(',').map(t => t.trim()).filter(t => t)
-            );
-          }
-          
-          // Send tags to server if any exist
-          if (allTags.length > 0) {
-            formData.append('tags', JSON.stringify(allTags));
-          }
-
-          const uploadUrl = `${API_BASE_URL}/api/upload`;
-          const response = await fetch(uploadUrl, {
-            method: 'POST',
-            body: formData
-          });
-
-          if (!response.ok) {
-            const contentType = response.headers.get('content-type');
-            let errorMessage = `Upload failed (${response.status})`;
-            
-            try {
-              if (contentType && contentType.includes('application/json')) {
-                const errorData = await response.json();
-                errorMessage = errorData.error || errorMessage;
-              } else {
-                const errorText = await response.text();
-                errorMessage = errorText || errorMessage;
-              }
-            } catch (e) {
-              errorMessage = `Server error (${response.status})`;
-            }
-            
-            throw new Error(errorMessage);
-          }
-
-          const responseText = await response.text();
-          if (!responseText) {
-            throw new Error('Empty response from server');
-          }
-          
-          data = JSON.parse(responseText);
-        }
-
-        currentItem.status = 'uploaded';
-        uploadSummary.success++;
-        // Track uploaded videos specifically
-        if (currentItem.type === 'video') {
-          uploadSummary.videosUploaded++;
-          videosUploadedCount.textContent = uploadSummary.videosUploaded;
-        }
-        updateQueueDisplay();
-
-        // Update progress bar and counter in batch mode
-        if (batchMode) {
-          const progress = ((currentFileIndex + 1) / fileQueue.length) * 100;
-          document.getElementById('progressBar').style.width = progress + '%';
-          processingProgress.textContent = currentFileIndex + 1;
-        }
-
-        loading.classList.remove('active');
-        currentFileIndex++;
-        processNextFile();
-
-      } catch (error) {
-        console.error('Upload error:', error);
-        const currentItem = fileQueue[currentFileIndex];
-        currentItem.status = 'error';
-        uploadSummary.failed++;
-        uploadSummary.errors.push(`${currentItem.file.name}: ${error.message}`);
-        updateQueueDisplay();
-
-        showMessage(`Error uploading ${currentItem.file.name}: ${error.message}`, 'error');
-        uploadCurrentBtn.disabled = false;
-        skipCurrentBtn.disabled = false;
-        loading.classList.remove('active');
-
-        // For batch mode, continue to next file
-        if (batchMode) {
-          // Update progress counter
-          processingProgress.textContent = currentFileIndex + 1;
-          const progress = ((currentFileIndex + 1) / fileQueue.length) * 100;
-          document.getElementById('progressBar').style.width = progress + '%';
-          
-          currentFileIndex++;
-          processNextFile();
-        }
-      }
-    }
-
-    // Re-enable folder selection after batch upload completes
-    function resetBatchMode() {
-      if (batchMode) {
-        folderSelect.disabled = false;
-        batchMode = false;
-        batchFolderSelection = '';
-        batchGroupTags = '';
-        batchFolderCheckbox.checked = false;
-      }
-    }
-
-    skipCurrentBtn.addEventListener('click', () => {
-      uploadCurrentBtn.disabled = true;
-      skipCurrentBtn.disabled = true;
-
-      const currentItem = fileQueue[currentFileIndex];
-      currentItem.status = 'skipped';
-      uploadSummary.skipped++;
-      updateQueueDisplay();
-
-      currentFileIndex++;
-      processNextFile();
-    });
-
-    function processNextFile() {
-      if (currentFileIndex >= fileQueue.length) {
-        document.getElementById('progressHeader').style.display = 'none';
-        loading.classList.remove('active');
-        processingSection.classList.remove('active');
-        showUploadSummary();
-        resetBatchMode();
-        return;
-      }
-
-      const currentItem = fileQueue[currentFileIndex];
-      currentItem.status = 'uploading';
-      updateQueueDisplay();
-
-      processingProgress.textContent = currentFileIndex + 1;
-      processingFileName.textContent = currentItem.file.name;
-      processingFileSize.textContent = (currentItem.file.size / 1024).toFixed(2) + ' KB';
-      processingFileType.textContent = currentItem.type;
-      processingMediaName.value = currentItem.name;
-      processingOcrText.value = '';
-      processingGroupTags.value = '';
-
-      // Hide all preview elements
-      processingImage.style.display = 'none';
-      processingVideo.style.display = 'none';
-      processingAudio.style.display = 'none';
-      audioPlaceholder.style.display = 'none';
-      document.getElementById('pdfPlaceholder').style.display = 'none';
-
-      // Hide OCR section for non-images
-      if (currentItem.type === 'image') {
-        ocrSection.style.display = 'block';
-        processingImage.style.display = 'block';
-      } else {
-        ocrSection.style.display = 'none';
-        if (currentItem.type === 'video') {
-          processingVideo.style.display = 'block';
-        } else if (currentItem.type === 'audio') {
-          audioPlaceholder.style.display = 'block';
-          processingAudio.style.display = 'block';
-        } else if (currentItem.type === 'pdf') {
-          document.getElementById('pdfPlaceholder').style.display = 'block';
-        }
-      }
-
-      // In batch mode, disable folder selection
-      if (batchMode) {
-        folderSelect.disabled = true;
-        folderSelect.value = batchFolderSelection;
-      } else {
-        folderSelect.disabled = false;
-      }
-
-      // For PDFs, we don't need to load the file data since we just show a placeholder
-      if (currentItem.type !== 'pdf') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (currentItem.type === 'image') {
-            processingImage.src = e.target.result;
-          } else if (currentItem.type === 'video') {
-            processingVideo.src = e.target.result;
-          } else if (currentItem.type === 'audio') {
-            processingAudio.src = e.target.result;
-          }
-        };
-        reader.readAsDataURL(currentItem.file);
-      }
-
-      // Always show processing section and auto-upload in batch mode
-      processingSection.classList.add('active');
-      
-      if (batchMode) {
-        uploadCurrentBtn.style.display = 'none';
-        skipCurrentBtn.style.display = 'none';
-        // Auto-upload in batch mode after a brief delay
-        setTimeout(() => {
-          performUpload();
-        }, 300);
-      } else {
-        loading.classList.remove('active');
-        uploadCurrentBtn.disabled = false;
-        skipCurrentBtn.disabled = false;
-        uploadCurrentBtn.style.display = 'block';
-        skipCurrentBtn.style.display = 'block';
-      }
-    }
-
     function showUploadSummary() {
-      processingSection.classList.remove('active');
+      progressSection.classList.remove('active');
       summarySection.classList.add('active');
 
       let summaryHtml = `
@@ -1086,8 +1079,8 @@
             <div style="font-size: 12px; color: #721c24;">Failed</div>
           </div>
         </div>
-        <div style="background: #e7f3ff; padding: 12px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
-          <strong style="color: #003d99;">🎥 Videos in this batch:</strong> <span style="font-size: 16px; font-weight: bold; color: #667eea;">${uploadSummary.videosUploaded}</span>
+        <div style="background: #fef4e7; padding: 12px; border-radius: 6px; border-left: 4px solid #C99A2C; margin-bottom: 15px;">
+          <strong style="color: #8B6914;">🎥 Videos in this batch:</strong> <span style="font-size: 16px; font-weight: bold; color: #C99A2C;">${uploadSummary.videosUploaded}</span>
         </div>
       `;
 
@@ -1107,18 +1100,7 @@
       fileQueue = [];
       fileInput.value = '';
       resetMessage();
-      resetBatchMode();
     });
-
-    function resetBatchMode() {
-      if (batchMode) {
-        folderSelect.disabled = false;
-        batchMode = false;
-        batchFolderSelection = '';
-        batchGroupTags = '';
-        batchFolderCheckbox.checked = false;
-      }
-    }
 
     function showMessage(text, type) {
       message.textContent = text;
