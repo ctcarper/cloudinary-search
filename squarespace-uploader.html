@@ -93,6 +93,7 @@
 
     .preview-section.active {
       display: block;
+      position: relative;
     }
 
     .preview-image {
@@ -219,10 +220,21 @@
       display: none;
       text-align: center;
       padding: 20px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 8px;
+      z-index: 10;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
 
     .loading.active {
-      display: block;
+      display: flex;
     }
 
     .spinner {
@@ -373,6 +385,29 @@
 
     <!-- Current File Processing Section -->
     <div id="processingSection" class="preview-section">
+      <!-- Progress header -->
+      <div id="progressHeader" style="display: none; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <div>
+            <div style="font-size: 14px; opacity: 0.9;">Upload Progress</div>
+            <div style="font-size: 24px; font-weight: bold;">File <span id="processingProgress">0</span> of <span id="processingTotal">0</span></div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; opacity: 0.9;">Videos Uploaded</div>
+            <div style="font-size: 24px; font-weight: bold;" id="videosUploadedCount">0</div>
+          </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px; overflow: hidden;">
+          <div id="progressBar" style="background: white; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Loading/Spinner Overlay (positioned absolutely within processingSection) -->
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div id="loadingText">Processing your image...</div>
+      </div>
+
       <img id="processingImage" class="preview-image" alt="Preview" style="display: none;">
       <video id="processingVideo" class="preview-image" controls style="display: none;"></video>
       
@@ -446,12 +481,6 @@
         <button class="btn-upload" id="uploadCurrentBtn">Upload This & Continue</button>
         <button class="btn-cancel" id="skipCurrentBtn">Skip & Continue</button>
       </div>
-    </div>
-
-    <!-- Loading Section -->
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-      <div id="loadingText">Processing your image...</div>
     </div>
 
     <!-- Summary Section -->
@@ -660,6 +689,11 @@
       
       queueSection.classList.remove('active');
       processNextFile();
+      
+      // Show progress header for batch uploads
+      if (batchMode) {
+        document.getElementById('progressHeader').style.display = 'block';
+      }
     });
 
     uploadCurrentBtn.addEventListener('click', async () => {
@@ -887,7 +921,19 @@
         }
         updateQueueDisplay();
 
+        // Update progress bar in batch mode
+        if (batchMode) {
+          const progress = ((currentFileIndex + 1) / fileQueue.length) * 100;
+          document.getElementById('progressBar').style.width = progress + '%';
+        }
+
         loading.classList.remove('active');
+        
+        // Stay on processing section in batch mode if more files to process
+        if (batchMode && currentFileIndex + 1 < fileQueue.length) {
+          processingSection.classList.add('active');
+        }
+        
         currentFileIndex++;
         processNextFile();
 
@@ -899,9 +945,25 @@
         uploadSummary.errors.push(`${currentItem.file.name}: ${error.message}`);
         updateQueueDisplay();
 
+        showMessage(`Error uploading ${currentItem.file.name}: ${error.message}`, 'error');
+        uploadCurrentBtn.disabled = false;
+        skipCurrentBtn.disabled = false;
         loading.classList.remove('active');
-        currentFileIndex++;
-        processNextFile();
+
+        // For batch mode, continue to next file
+        if (batchMode) {
+          // Update progress bar
+          const progress = ((currentFileIndex + 1) / fileQueue.length) * 100;
+          document.getElementById('progressBar').style.width = progress + '%';
+          
+          // Stay on processing section if more files to process
+          if (currentFileIndex + 1 < fileQueue.length) {
+            processingSection.classList.add('active');
+          }
+          
+          currentFileIndex++;
+          processNextFile();
+        }
       }
     }
 
@@ -931,7 +993,9 @@
 
     function processNextFile() {
       if (currentFileIndex >= fileQueue.length) {
+        document.getElementById('progressHeader').style.display = 'none';
         showUploadSummary();
+        resetBatchMode();
         return;
       }
 
@@ -993,16 +1057,23 @@
         reader.readAsDataURL(currentItem.file);
       }
 
-      loading.classList.remove('active');
-      processingSection.classList.add('active');
-      uploadCurrentBtn.disabled = false;
-      skipCurrentBtn.disabled = false;
-
-      // Auto-upload in batch mode after a brief delay
+      // For batch mode, keep processingSection visible with both image and loading spinner
       if (batchMode) {
+        processingSection.classList.add('active');
+        loading.classList.add('active');
+        uploadCurrentBtn.style.display = 'none';
+        skipCurrentBtn.style.display = 'none';
+        // Auto-upload in batch mode after a brief delay
         setTimeout(() => {
           performUpload();
         }, 300);
+      } else {
+        loading.classList.remove('active');
+        processingSection.classList.add('active');
+        uploadCurrentBtn.disabled = false;
+        skipCurrentBtn.disabled = false;
+        uploadCurrentBtn.style.display = 'block';
+        skipCurrentBtn.style.display = 'block';
       }
     }
 
