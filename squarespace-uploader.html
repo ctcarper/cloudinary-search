@@ -677,6 +677,7 @@
       currentFileIndex = 0;
       uploadSummary = { success: 0, skipped: 0, failed: 0, errors: [], videosUploaded: 0 };
       totalToProcess.textContent = fileQueue.length;
+      document.getElementById('processingTotal').textContent = fileQueue.length;
       videosUploadedCount.textContent = '0';
       
       // Check if batch mode is enabled
@@ -685,15 +686,11 @@
         batchFolderSelection = queueFolderSelect.value;
         batchGroupTags = queueGroupTags.value.trim();
         folderSelect.disabled = true; // Lock folder during batch upload
+        document.getElementById('progressHeader').style.display = 'block';
       }
       
       queueSection.classList.remove('active');
       processNextFile();
-      
-      // Show progress header for batch uploads
-      if (batchMode) {
-        document.getElementById('progressHeader').style.display = 'block';
-      }
     });
 
     uploadCurrentBtn.addEventListener('click', async () => {
@@ -921,19 +918,14 @@
         }
         updateQueueDisplay();
 
-        // Update progress bar in batch mode
+        // Update progress bar and counter in batch mode
         if (batchMode) {
           const progress = ((currentFileIndex + 1) / fileQueue.length) * 100;
           document.getElementById('progressBar').style.width = progress + '%';
+          processingProgress.textContent = currentFileIndex + 1;
         }
 
         loading.classList.remove('active');
-        
-        // Stay on processing section in batch mode if more files to process
-        if (batchMode && currentFileIndex + 1 < fileQueue.length) {
-          processingSection.classList.add('active');
-        }
-        
         currentFileIndex++;
         processNextFile();
 
@@ -952,14 +944,10 @@
 
         // For batch mode, continue to next file
         if (batchMode) {
-          // Update progress bar
+          // Update progress counter
+          processingProgress.textContent = currentFileIndex + 1;
           const progress = ((currentFileIndex + 1) / fileQueue.length) * 100;
           document.getElementById('progressBar').style.width = progress + '%';
-          
-          // Stay on processing section if more files to process
-          if (currentFileIndex + 1 < fileQueue.length) {
-            processingSection.classList.add('active');
-          }
           
           currentFileIndex++;
           processNextFile();
@@ -994,6 +982,8 @@
     function processNextFile() {
       if (currentFileIndex >= fileQueue.length) {
         document.getElementById('progressHeader').style.display = 'none';
+        loading.classList.remove('active');
+        processingSection.classList.remove('active');
         showUploadSummary();
         resetBatchMode();
         return;
@@ -1057,10 +1047,10 @@
         reader.readAsDataURL(currentItem.file);
       }
 
-      // For batch mode, keep processingSection visible with both image and loading spinner
+      // Always show processing section and auto-upload in batch mode
+      processingSection.classList.add('active');
+      
       if (batchMode) {
-        processingSection.classList.add('active');
-        loading.classList.add('active');
         uploadCurrentBtn.style.display = 'none';
         skipCurrentBtn.style.display = 'none';
         // Auto-upload in batch mode after a brief delay
@@ -1069,7 +1059,6 @@
         }, 300);
       } else {
         loading.classList.remove('active');
-        processingSection.classList.add('active');
         uploadCurrentBtn.disabled = false;
         skipCurrentBtn.disabled = false;
         uploadCurrentBtn.style.display = 'block';
