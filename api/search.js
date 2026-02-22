@@ -119,18 +119,15 @@ module.exports = async (req, res) => {
     const safeResults = (data.resources || []).map(r => {
       let thumbnailUrl = r.thumbnail_url || null;
       
-      // If no thumbnail_url from Cloudinary, construct one for videos by appending .gif with transformations
+      // If no thumbnail_url from Cloudinary, construct one for videos using .jpg (per Cloudinary API docs)
+      // Cloudinary will serve it as GIF even though the URL uses .jpg
       if (!thumbnailUrl && r.resource_type === 'video') {
         const videoUrl = r.secure_url || r.url;
         if (videoUrl) {
-          // For video thumbnails, replace the file extension with .gif and insert transformations
-          // URL structure: https://res.cloudinary.com/[cloud]/video/upload/[version]/[path/to/file].[ext]
-          // Transform to: https://res.cloudinary.com/[cloud]/video/upload/c_scale,w_300,h_300/[version]/[path/to/file].gif
-          
-          // Remove any file extension and replace with .gif
+          // Per Cloudinary docs: https://res.cloudinary.com/[CLOUD_NAME]/video/upload/c_scale,w_300/[PUBLIC_ID].jpg
+          // Remove video file extension, insert transformations after /upload/, then append .jpg
           const withoutExt = videoUrl.replace(/\.(mp4|mov|avi|mkv|flv|wmv|webm|m4v|mxf|ogv|ts)$/i, '');
-          // Insert transformations after /upload/
-          thumbnailUrl = withoutExt.replace('/video/upload/', '/video/upload/c_scale,w_300,h_300/') + '.gif';
+          thumbnailUrl = withoutExt.replace('/video/upload/', '/video/upload/c_scale,w_300,h_300/') + '.jpg';
         }
       }
       
