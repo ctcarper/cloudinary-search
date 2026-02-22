@@ -774,19 +774,8 @@
         
         let thumbnailHtml;
         if (isVideo) {
-          // For videos, use Cloudinary's built-in video thumbnail
-          let videoThumbnailUrl = item.secure_url;
-          // Extract cloud name and public_id from URL to build thumbnail URL
-          const urlMatch = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/video\/upload\/(v\d+)\/(.*)/);
-          if (urlMatch) {
-            const cloudName = urlMatch[1];
-            const version = urlMatch[2];
-            const publicId = urlMatch[3];
-            // Generate thumbnail from video: take frame at 1 second, scale to fit, use auto format
-            videoThumbnailUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_scale,w_500,h_500,f_auto,so_1s/${version}/${publicId}`;
-          }
-          thumbnailHtml = `<img src="${videoThumbnailUrl}" alt="${item.public_id}" loading="lazy" onerror="this.parentElement.className='gallery-item-placeholder video'; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                           <div class="audio-thumbnail-content" style="display:none;">🎥</div>`;
+          // For videos, show a video icon placeholder
+          thumbnailHtml = `<div class="gallery-item-placeholder video">🎥</div>`;
         } else if (isAudio) {
           // For audio files, use an animated waveform visualization
           thumbnailHtml = `<div class="gallery-item-placeholder audio">
