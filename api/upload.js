@@ -145,7 +145,8 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       public_id: publicId,
       // Add tags for metadata (visible in Cloudinary Tags UI)
       tags: [metadata.name].filter(tag => tag), // Only include name, not tapYear
-      timeout: 600000 // 10 minute timeout for large file uploads
+      timeout: 600000, // 10 minute timeout for large file uploads
+      async: false // Ensure synchronous upload - file available immediately after completion
     };
 
     // Add audio tag for audio files
