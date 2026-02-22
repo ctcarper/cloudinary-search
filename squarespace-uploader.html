@@ -880,6 +880,9 @@
         document.getElementById('currentFileName').textContent = item.file.name;
         document.getElementById('currentFileStatus').style.display = 'block';
         loading.classList.add('active');
+        
+        // Reset file progress bar to 0 at start of each file
+        document.getElementById('uploadProgressBar').style.width = '0%';
 
         const fileSizeMB = item.file.size / (1024 * 1024);
         let data;
@@ -906,7 +909,7 @@
         // Update real-time counters
         document.getElementById('realtimeSuccess').textContent = uploadSummary.success;
 
-        // Update progress
+        // Update overall progress (per file, not per byte)
         const progress = ((idx + 1) / fileQueue.length) * 100;
         document.getElementById('uploadProgressBar').style.width = progress + '%';
 
@@ -952,111 +955,155 @@
         formData.append('tags', JSON.stringify(allTags));
       }
 
-      const uploadUrl = `${API_BASE_URL}/api/upload`;
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: getApiHeaders(),
-        body: formData
-      });
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        let errorMessage = `Upload failed (${response.status})`;
+      // Use XMLHttpRequest to track upload progress
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
         
-        try {
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorMessage;
-          } else {
-            const errorText = await response.text();
-            errorMessage = errorText || errorMessage;
+        // Track upload progress
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            document.getElementById('uploadProgressBar').style.width = percentComplete + '%';
+            console.log(`Upload progress: ${percentComplete.toFixed(1)}%`);
           }
-        } catch (e) {
-          errorMessage = `Server error (${response.status})`;
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const result = JSON.parse(xhr.responseText);
+              resolve(result);
+            } catch (e) {
+              reject(new Error('Invalid response from server'));
+            }
+          } else {
+            let errorMessage = `Upload failed (${xhr.status})`;
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              errorMessage = errorData.error || errorMessage;
+            } catch (e) {
+              errorMessage = xhr.responseText || errorMessage;
+            }
+            reject(new Error(errorMessage));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload cancelled'));
+        });
+
+        const uploadUrl = `${API_BASE_URL}/api/upload`;
+        xhr.open('POST', uploadUrl, true);
+        
+        // Add API key header if present
+        if (API_KEY) {
+          xhr.setRequestHeader('x-api-key', API_KEY);
         }
         
-        throw new Error(errorMessage);
-      }
-
-      const responseText = await response.text();
-      if (!responseText) {
-        throw new Error('Empty response from server');
-      }
-      
-      return JSON.parse(responseText);
+        xhr.send(formData);
+      });
     }
 
     async function uploadDirectToCloudinary(item) {
-      try {
-        // Use individual file folder if set, otherwise use global batch folder
-        const folderToUse = item.folder || batchFolderSelect.value;
+      // Use individual file folder if set, otherwise use global batch folder
+      const folderToUse = item.folder || batchFolderSelect.value;
+      
+      // Gather tags from batch and individual levels
+      let allTags = [];
+      if (batchTagsInput.value.trim()) {
+        allTags = allTags.concat(
+          batchTagsInput.value.trim().split(',').map(t => t.trim()).filter(t => t)
+        );
+      }
+      if (item.tags.trim()) {
+        allTags = allTags.concat(
+          item.tags.trim().split(',').map(t => t.trim()).filter(t => t)
+        );
+      }
+      
+      // Upload through backend endpoint instead of directly to Cloudinary
+      // This avoids CORS issues and supports larger files (up to 500MB)
+      const formData = new FormData();
+      formData.append('file', item.file);
+      formData.append('name', item.mediaName);
+      formData.append('folder', folderToUse);
+      formData.append('isAudio', item.type === 'audio');
+      formData.append('isPDF', item.type === 'pdf');
+      
+      if (allTags.length > 0) {
+        allTags.forEach((tag, index) => {
+          formData.append(`tags[${index}]`, tag);
+        });
+      }
+      
+      // Use XMLHttpRequest to track upload progress
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
         
-        // Gather tags from batch and individual levels
-        let allTags = [];
-        if (batchTagsInput.value.trim()) {
-          allTags = allTags.concat(
-            batchTagsInput.value.trim().split(',').map(t => t.trim()).filter(t => t)
-          );
-        }
-        if (item.tags.trim()) {
-          allTags = allTags.concat(
-            item.tags.trim().split(',').map(t => t.trim()).filter(t => t)
-          );
-        }
-        
-        // Upload through backend endpoint instead of directly to Cloudinary
-        // This avoids CORS issues and supports larger files (up to 500MB)
-        const formData = new FormData();
-        formData.append('file', item.file);
-        formData.append('name', item.mediaName);
-        formData.append('folder', folderToUse);
-        formData.append('isAudio', item.type === 'audio');
-        formData.append('isPDF', item.type === 'pdf');
-        
-        if (allTags.length > 0) {
-          allTags.forEach((tag, index) => {
-            formData.append(`tags[${index}]`, tag);
-          });
-        }
-        
-        const uploadUrl = `${API_BASE_URL}/api/upload`;
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: getApiHeaders(),
-          body: formData
+        // Track upload progress
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            document.getElementById('uploadProgressBar').style.width = percentComplete + '%';
+            console.log(`Upload progress: ${percentComplete.toFixed(1)}%`);
+          }
         });
 
-        if (!uploadResponse.ok) {
-          let errorMessage = `HTTP ${uploadResponse.status}`;
-          try {
-            const errorData = await uploadResponse.json();
-            errorMessage = errorData.error?.message || errorData.message || errorMessage;
-          } catch (e) {
-            const errorText = await uploadResponse.text();
-            errorMessage = errorText || errorMessage;
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const result = JSON.parse(xhr.responseText);
+              resolve({
+                success: true,
+                publicId: result.public_id,
+                secureUrl: result.secure_url,
+                name: item.mediaName,
+                tags: result.tags || [item.mediaName],
+                metadata: {
+                  width: result.width,
+                  height: result.height,
+                  format: result.format,
+                  bytes: result.bytes,
+                  createdAt: result.created_at
+                }
+              });
+            } catch (e) {
+              reject(new Error('Invalid response from server'));
+            }
+          } else {
+            let errorMessage = `HTTP ${xhr.status}`;
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              errorMessage = errorData.error?.message || errorData.message || errorMessage;
+            } catch (e) {
+              errorMessage = xhr.responseText || errorMessage;
+            }
+            reject(new Error(`Upload failed: ${errorMessage}`));
           }
-          throw new Error(`Upload failed: ${errorMessage}`);
-        }
+        });
 
-        const result = await uploadResponse.json();
-        return {
-          success: true,
-          publicId: result.public_id,
-          secureUrl: result.secure_url,
-          name: item.mediaName,
-          tags: result.tags || [item.mediaName],
-          metadata: {
-            width: result.width,
-            height: result.height,
-            format: result.format,
-            bytes: result.bytes,
-            createdAt: result.created_at
-          }
-        };
-      } catch (error) {
-        console.error('Upload error:', error);
-        throw error;
-      }
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload cancelled'));
+        });
+
+        const uploadUrl = `${API_BASE_URL}/api/upload`;
+        xhr.open('POST', uploadUrl, true);
+        
+        // Add API key header if present
+        if (API_KEY) {
+          xhr.setRequestHeader('x-api-key', API_KEY);
+        }
+        
+        xhr.send(formData);
+      });
     }
 
     function showUploadSummary() {
