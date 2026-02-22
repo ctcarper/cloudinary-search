@@ -116,26 +116,36 @@ module.exports = async (req, res) => {
 
     const data = await resp.json();
 
-    const safeResults = (data.resources || []).map(r => ({
-      asset_id: r.asset_id,
-      public_id: r.public_id,
-      secure_url: r.secure_url || r.url,
-      thumbnail_url: r.thumbnail_url || null,
-      width: r.width,
-      height: r.height,
-      format: r.format,
-      resource_type: r.resource_type,
-      created_at: r.created_at,
-      tags: r.tags || [],
-      bytes: r.bytes,
-      duration: r.duration,
-      type: r.type,
-      metadata: r.metadata || {},
-      context: r.context || {},
-      alt: r.context?.alt || null,
-      caption: r.context?.caption || null,
-      description: r.context?.raw_description || null
-    }));
+    const safeResults = (data.resources || []).map(r => {
+      let thumbnailUrl = r.thumbnail_url || null;
+      
+      // If no thumbnail_url from Cloudinary, construct one for videos by converting to image resource
+      if (!thumbnailUrl && r.resource_type === 'video') {
+        // Replace "/video/upload/" with "/image/upload/" to access the auto-generated thumbnail
+        thumbnailUrl = (r.secure_url || r.url)?.replace('/video/upload/', '/image/upload/');
+      }
+      
+      return {
+        asset_id: r.asset_id,
+        public_id: r.public_id,
+        secure_url: r.secure_url || r.url,
+        thumbnail_url: thumbnailUrl,
+        width: r.width,
+        height: r.height,
+        format: r.format,
+        resource_type: r.resource_type,
+        created_at: r.created_at,
+        tags: r.tags || [],
+        bytes: r.bytes,
+        duration: r.duration,
+        type: r.type,
+        metadata: r.metadata || {},
+        context: r.context || {},
+        alt: r.context?.alt || null,
+        caption: r.context?.caption || null,
+        description: r.context?.raw_description || null
+      };
+    });
 
     return res.status(200).json({
       results: safeResults,
