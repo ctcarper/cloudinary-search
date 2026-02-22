@@ -538,14 +538,22 @@ module.exports = async (req, res) => {
     return;
 
   } finally {
-    // Clean up temp file
+    // Clean up temp file asynchronously with a small delay to allow streams to close
     if (tempFilePath && fs.existsSync(tempFilePath)) {
-      try {
-        fs.unlinkSync(tempFilePath);
-        console.log('Temp file cleaned up');
-      } catch (e) {
-        console.warn('Failed to clean up temp file:', e.message);
-      }
+      // Use setTimeout to defer deletion slightly, allowing streams to finish closing
+      setImmediate(() => {
+        try {
+          fs.unlink(tempFilePath, (err) => {
+            if (err) {
+              console.warn('Failed to clean up temp file:', err.message);
+            } else {
+              console.log('Temp file cleaned up');
+            }
+          });
+        } catch (e) {
+          console.warn('Error scheduling temp file cleanup:', e.message);
+        }
+      });
     }
   }
 };
