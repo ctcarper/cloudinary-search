@@ -3,10 +3,23 @@ const btoa = (str) => Buffer.from(str).toString('base64');
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // API key authentication
+  const apiKey = req.query.key || req.headers['x-api-key'];
+  const validKey = process.env.UPLOADER_API_KEY;
+
+  if (!validKey) {
+    console.error('UPLOADER_API_KEY environment variable not set');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  if (!apiKey || apiKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
   }
 
   const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;

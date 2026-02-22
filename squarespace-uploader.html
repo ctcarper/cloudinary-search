@@ -578,10 +578,25 @@
       ? `${window.location.origin}`
       : `https://cloudinary-search.vercel.app`;
 
+    // Get API key from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const API_KEY = urlParams.get('key');
+
+    // Helper function to add API key to fetch requests
+    function getApiHeaders(additionalHeaders = {}) {
+      const headers = { ...additionalHeaders };
+      if (API_KEY) {
+        headers['x-api-key'] = API_KEY;
+      }
+      return headers;
+    }
+
     // Version checking
     async function checkVersion() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/version`);
+        const response = await fetch(`${API_BASE_URL}/api/version`, {
+          headers: getApiHeaders()
+        });
         const versionData = await response.json();
         const storedVersion = localStorage.getItem('appVersion');
         const currentVersion = versionData.version;
@@ -607,7 +622,9 @@
       try {
         const foldersUrl = `${API_BASE_URL}/api/folders?t=${Date.now()}`;
         console.log('Loading folders from:', foldersUrl);
-        const response = await fetch(foldersUrl);
+        const response = await fetch(foldersUrl, {
+          headers: getApiHeaders()
+        });
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
@@ -938,6 +955,7 @@
       const uploadUrl = `${API_BASE_URL}/api/upload`;
       const response = await fetch(uploadUrl, {
         method: 'POST',
+        headers: getApiHeaders(),
         body: formData
       });
 
@@ -989,7 +1007,7 @@
         const signUrl = `${API_BASE_URL}/api/sign-upload`;
         const signResponse = await fetch(signUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getApiHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             folder: folderToUse,
             name: item.mediaName,

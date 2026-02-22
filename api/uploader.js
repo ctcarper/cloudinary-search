@@ -24,6 +24,23 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // API Key authentication
+  const apiKey = req.query.key || req.headers['x-api-key'];
+  const validKey = process.env.UPLOADER_API_KEY;
+
+  if (!validKey) {
+    console.error('UPLOADER_API_KEY environment variable not set');
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Server configuration error' }));
+    return;
+  }
+
+  if (!apiKey || apiKey !== validKey) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
+    return;
+  }
+
   try {
     // Read uploader HTML from project root
     const htmlPath = path.join(process.cwd(), 'squarespace-uploader.html');

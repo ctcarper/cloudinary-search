@@ -348,7 +348,7 @@ module.exports = async (req, res) => {
   if (!res.headersSent) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
   }
 
   if (req.method === 'OPTIONS') {
@@ -366,6 +366,22 @@ module.exports = async (req, res) => {
       res.writeHead(405, { 'Content-Type': 'application/json' });
     }
     res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  // API key authentication
+  const apiKey = req.query.key || req.headers['x-api-key'];
+  const validKey = process.env.UPLOADER_API_KEY;
+
+  if (!validKey) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Server configuration error' }));
+    return;
+  }
+
+  if (!apiKey || apiKey !== validKey) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
     return;
   }
 

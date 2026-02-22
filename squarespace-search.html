@@ -561,10 +561,29 @@
       ? `${window.location.origin}/api/version`
       : `https://cloudinary-search.vercel.app/api/version`;
     
+    const API_DOWNLOAD_URL = window.location.hostname === 'localhost'
+      ? `${window.location.origin}/api/download-pdf`
+      : `https://cloudinary-search.vercel.app/api/download-pdf`;
+    
+    // Get API key from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const API_KEY = urlParams.get('key');
+
+    // Helper function to add API key to fetch requests
+    function getApiHeaders(additionalHeaders = {}) {
+      const headers = { ...additionalHeaders };
+      if (API_KEY) {
+        headers['x-api-key'] = API_KEY;
+      }
+      return headers;
+    }
+    
     // Version checking
     async function checkVersion() {
       try {
-        const response = await fetch(VERSION_API_URL);
+        const response = await fetch(VERSION_API_URL, {
+          headers: getApiHeaders()
+        });
         const versionData = await response.json();
         const storedVersion = localStorage.getItem('appVersion');
         const currentVersion = versionData.version;
@@ -628,7 +647,9 @@
 
       // Fetch fresh if no cache
       try {
-        const response = await fetch(FOLDERS_API_URL + `?t=${Date.now()}`);
+        const response = await fetch(FOLDERS_API_URL + `?t=${Date.now()}`, {
+          headers: getApiHeaders()
+        });
         const data = await response.json();
         
         if (data.folders && Array.isArray(data.folders)) {
@@ -708,7 +729,9 @@
         if (maxResults) params.append('max_results', maxResults);
         if (currentFolder) params.append('folder', currentFolder);
 
-        const response = await fetch(`${API_URL}?${params.toString()}`);
+        const response = await fetch(`${API_URL}?${params.toString()}`, {
+          headers: getApiHeaders()
+        });
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -906,7 +929,7 @@
               // Pass cloudName, version, and publicId to construct permanent CDN URL on server
               const response = await fetch(API_DOWNLOAD_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getApiHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                   cloudName: cloudName,
                   version: version,

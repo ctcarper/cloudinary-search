@@ -6,6 +6,27 @@
 
 const cloudinary = require('cloudinary').v2;
 
+// API key authentication middleware
+function authenticateApiKey(req, res) {
+  const apiKey = req.query.key || req.headers['x-api-key'];
+  const validKey = process.env.UPLOADER_API_KEY;
+
+  if (!validKey) {
+    res.setHeader('Content-Type', 'application/json');
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: 'Server configuration error' }));
+    return false;
+  }
+
+  if (!apiKey || apiKey !== validKey) {
+    res.setHeader('Content-Type', 'application/json');
+    res.writeHead(401);
+    res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
+    return false;
+  }
+  return true;
+}
+
 // In-memory cache with TTL
 let folderCache = null;
 let cacheTimestamp = null;
@@ -112,7 +133,7 @@ module.exports = async (req, res) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -123,6 +144,22 @@ module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  // API key authentication
+  const apiKey = req.query.key || req.headers['x-api-key'];
+  const validKey = process.env.UPLOADER_API_KEY;
+
+  if (!validKey) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Server configuration error' }));
+    return;
+  }
+
+  if (!apiKey || apiKey !== validKey) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
     return;
   }
 
