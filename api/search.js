@@ -12,6 +12,12 @@ const ALLOWED_ORIGINS = [
 function isAllowedOrigin(req) {
   const referer = req.headers.referer || '';
   const origin = req.headers.origin || '';
+  const host = req.headers.host || '';
+  
+  // Allow localhost requests (for development)
+  if (host.includes('localhost')) {
+    return true;
+  }
   
   // Check if referer starts with any allowed origin
   const refererAllowed = ALLOWED_ORIGINS.some(allowed => referer.startsWith(allowed));
