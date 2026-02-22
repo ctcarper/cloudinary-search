@@ -12,7 +12,7 @@
 
 const { IncomingForm } = require('formidable');
 const fs = require('fs');
-const FormData = require('form-data');
+const path = require('path');
 const https = require('https');
 const http = require('http');
 
@@ -194,30 +194,12 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     
     let response;
     
-    // For large files (>100MB), use streaming upload to avoid 413 payload errors
+    // For large files (>100MB), use upload_large method with chunked uploads
     if (fileSizeMB > 100) {
-      console.log(`⚠️  Attempting streaming upload for large file (${fileSizeMB.toFixed(2)} MB)...`);
-      // Add extended timeout for streaming uploads
-      options.timeout = 300000; // 5 minute timeout for streaming
-      
-      response = await new Promise((resolve, reject) => {
-        const handleStream = cloudinary.uploader.upload_stream(options, (error, result) => {
-          if (error) {
-            reject(new Error(`Cloudinary stream upload failed: ${error.message}`));
-          } else {
-            resolve(result);
-          }
-        });
-        
-        fs.createReadStream(filePath)
-          .on('error', (error) => {
-            handleStream.destroy();
-            reject(new Error(`File stream error: ${error.message}`));
-          })
-          .pipe(handleStream);
-      });
+      console.log(`⚠️  File is ${fileSizeMB.toFixed(2)} MB - Using chunked upload (upload_large)...`);
+      response = await cloudinary.uploader.upload_large(filePath, options);
     } else {
-      console.log('Using standard upload...');
+      console.log('Using standard SDK upload...');
       response = await cloudinary.uploader.upload(filePath, options);
     }
 
