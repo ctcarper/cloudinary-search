@@ -145,7 +145,7 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       public_id: publicId,
       // Add tags for metadata (visible in Cloudinary Tags UI)
       tags: [metadata.name].filter(tag => tag), // Only include name, not tapYear
-      timeout: 120000 // 120 second timeout for large file uploads
+      timeout: 600000 // 10 minute timeout for large file uploads
     };
 
     // Add audio tag for audio files
@@ -197,7 +197,17 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     // For large files (>100MB), use upload_large method with chunked uploads
     if (fileSizeMB > 100) {
       console.log(`⚠️  File is ${fileSizeMB.toFixed(2)} MB - Using chunked upload (upload_large)...`);
-      response = await cloudinary.uploader.upload_large(filePath, options);
+      console.log('Starting upload_large with timeout:', options.timeout, 'ms');
+      const startTime = Date.now();
+      try {
+        response = await cloudinary.uploader.upload_large(filePath, options);
+        const uploadTime = Date.now() - startTime;
+        console.log(`✅ upload_large completed in ${uploadTime}ms (${(uploadTime/1000).toFixed(1)}s)`);
+      } catch (error) {
+        const uploadTime = Date.now() - startTime;
+        console.error(`❌ upload_large failed after ${uploadTime}ms (${(uploadTime/1000).toFixed(1)}s)`);
+        throw error;
+      }
     } else {
       console.log('Using standard SDK upload...');
       response = await cloudinary.uploader.upload(filePath, options);
