@@ -777,7 +777,7 @@
           // For videos, use Cloudinary's auto-generated thumbnail image
           const videoThumbnailUrl = item.thumbnail_url || item.secure_url;
           
-          thumbnailHtml = `<img src="${videoThumbnailUrl}" alt="${item.public_id}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'gallery-item-placeholder video\\'>🎥</div>';">`;
+          thumbnailHtml = `<img src="${videoThumbnailUrl}" alt="${item.public_id}" onerror="this.parentElement.innerHTML='<div class=\\'gallery-item-placeholder video\\'>🎥</div>';">`;
         } else if (isAudio) {
           // For audio files, use an animated waveform visualization
           thumbnailHtml = `<div class="gallery-item-placeholder audio">
@@ -806,7 +806,7 @@
             }
           }
           // For images and PDFs (which are uploaded as image type), display the thumbnail
-          thumbnailHtml = `<img src="${imageUrl}" alt="${item.public_id}" loading="lazy">`;
+          thumbnailHtml = `<img src="${imageUrl}" alt="${item.public_id}">`;
         }
         
         return `
