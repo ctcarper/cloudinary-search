@@ -547,7 +547,7 @@
         <button class="modal-close" onclick="closeModal()">&times;</button>
         <div id="modalMediaContainer">
           <img id="modalImage" class="modal-image" src="" alt="" style="display:none;">
-          <video id="modalVideo" class="modal-video" controls style="display:none;"></video>
+          <video id="modalVideo" class="modal-video" controls autoplay style="display:none;"></video>
           <div id="audioPlaceholder" class="audio-placeholder" style="display:none;">
             <div class="audio-waveform">
               <div class="audio-bar"></div>
@@ -912,8 +912,10 @@
       document.getElementById('pdfPlaceholder').style.display = 'none';
       
       if (isVideo) {
-        document.getElementById('modalVideo').src = item.secure_url;
-        document.getElementById('modalVideo').style.display = 'block';
+        const videoEl = document.getElementById('modalVideo');
+        videoEl.src = item.secure_url;
+        videoEl.style.display = 'block';
+        videoEl.play();
       } else if (isAudio) {
         document.getElementById('audioPlaceholder').style.display = 'flex';
         document.getElementById('modalAudio').src = item.secure_url;
