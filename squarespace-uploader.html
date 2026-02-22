@@ -1004,63 +1004,25 @@
           );
         }
         
-        const signUrl = `${API_BASE_URL}/api/sign-upload`;
-        const signResponse = await fetch(signUrl, {
-          method: 'POST',
-          headers: getApiHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({
-            folder: folderToUse,
-            name: item.mediaName,
-            isAudio: item.type === 'audio',
-            isPDF: item.type === 'pdf',
-            tags: allTags.length > 0 ? allTags : undefined
-          })
-        });
-
-        if (!signResponse.ok) {
-          const errText = await signResponse.text();
-          throw new Error(`Failed to get upload signature: ${signResponse.status} - ${errText}`);
-        }
-
-        const signData = await signResponse.json();
-        
+        // Upload through backend endpoint instead of directly to Cloudinary
+        // This avoids CORS issues and supports larger files (up to 500MB)
         const formData = new FormData();
         formData.append('file', item.file);
-        formData.append('api_key', signData.apiKey);
-        formData.append('timestamp', signData.timestamp.toString());
-        formData.append('signature', signData.signature);
-        formData.append('public_id', signData.public_id);
-        formData.append('resource_type', signData.resource_type || 'video');
+        formData.append('name', item.mediaName);
+        formData.append('folder', folderToUse);
+        formData.append('isAudio', item.type === 'audio');
+        formData.append('isPDF', item.type === 'pdf');
         
-        if (signData.context) {
-          formData.append('context', signData.context);
-        }
-        
-        if (signData.tags) {
-          const tagsArray = typeof signData.tags === 'string' 
-            ? signData.tags.split(',') 
-            : signData.tags;
-          
-          // Add batch tags if any
-          if (batchTagsInput.value.trim()) {
-            const batchTags = batchTagsInput.value.trim().split(',').map(t => t.trim());
-            tagsArray.push(...batchTags);
-          }
-          
-          tagsArray.forEach((tag, index) => {
-            formData.append(`tags[${index}]`, tag.trim());
+        if (allTags.length > 0) {
+          allTags.forEach((tag, index) => {
+            formData.append(`tags[${index}]`, tag);
           });
         }
         
-        if (signData.folder) {
-          formData.append('folder', signData.folder);
-        }
-
-        const typeEndpoint = signData.resource_type || 'video';
-        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${typeEndpoint}/upload`;
-        
+        const uploadUrl = `${API_BASE_URL}/api/upload`;
         const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
+          headers: getApiHeaders(),
           body: formData
         });
 
@@ -1073,7 +1035,7 @@
             const errorText = await uploadResponse.text();
             errorMessage = errorText || errorMessage;
           }
-          throw new Error(`Cloudinary upload failed: ${errorMessage}`);
+          throw new Error(`Upload failed: ${errorMessage}`);
         }
 
         const result = await uploadResponse.json();
@@ -1092,7 +1054,7 @@
           }
         };
       } catch (error) {
-        console.error('Direct upload error:', error);
+        console.error('Upload error:', error);
         throw error;
       }
     }
