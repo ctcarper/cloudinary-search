@@ -149,6 +149,11 @@ async function getFoldersFromCloudinary() {
 module.exports = async (req, res) => {
   console.log('=== Folders Request Started ===');
   console.log('Method:', req.method);
+  console.log('API Key provided:', !!req.headers['x-api-key']);
+  console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✓ Set' : '✗ NOT SET');
+  console.log('CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? '✓ Set' : '✗ NOT SET');
+  console.log('CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? '✓ Set' : '✗ NOT SET');
+  console.log('UPLOADER_API_KEY:', process.env.UPLOADER_API_KEY ? '✓ Set' : '✗ NOT SET');
 
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -196,13 +201,16 @@ module.exports = async (req, res) => {
     // Format response with folder paths
     const folderPaths = folders.map(f => f.path);
     
+    console.log(`Returning ${folderPaths.length} folders to client`);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ 
       success: true,
       folders: folderPaths
     }));
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('=== ERROR in /api/folders ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ 
       error: error.message || 'Failed to fetch folders',

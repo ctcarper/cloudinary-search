@@ -14,6 +14,12 @@ const server = http.createServer((req, res) => {
   const pathname = parsedUrl.pathname;
   const method = req.method;
 
+  // Parse query parameters (Vercel compatibility)
+  req.query = {};
+  for (const [key, value] of parsedUrl.searchParams.entries()) {
+    req.query[key] = value;
+  }
+
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
