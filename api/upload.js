@@ -365,40 +365,44 @@ async function updateAssetWithOCRTags(cloudinary, publicId, ocrText) {
   }
 }
 
+// Helper function to send response with CORS headers
+function sendResponse(res, statusCode, body) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, x-api-key'
+  };
+  res.writeHead(statusCode, headers);
+  res.end(JSON.stringify(body));
+}
+
 // Main handler (Vercel serverless format)
 module.exports = async (req, res) => {
   console.log('=== Upload Request Started ===');
   console.log('Method:', req.method);
   
-  // CORS headers
-  if (!res.headersSent) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-  }
-
+  // Handle OPTIONS requests
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS request');
-    if (!res.headersSent) {
-      res.writeHead(200);
-    }
+    res.writeHead(200, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, x-api-key'
+    });
     res.end();
     return;
   }
 
   if (req.method !== 'POST') {
     console.log('Invalid method:', req.method);
-    if (!res.headersSent) {
-      res.writeHead(405, { 'Content-Type': 'application/json' });
-    }
-    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    sendResponse(res, 405, { error: 'Method not allowed' });
     return;
   }
 
   // Validate origin
   if (!isAllowedOrigin(req)) {
-    res.writeHead(403, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Access denied - invalid origin' }));
+    sendResponse(res, 403, { error: 'Access denied - invalid origin' });
     return;
   }
 
@@ -407,14 +411,12 @@ module.exports = async (req, res) => {
   const validKey = process.env.UPLOADER_API_KEY;
 
   if (!validKey) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Server configuration error' }));
+    sendResponse(res, 500, { error: 'Server configuration error' });
     return;
   }
 
   if (!apiKey || apiKey !== validKey) {
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Unauthorized: Invalid or missing API key' }));
+    sendResponse(res, 401, { error: 'Unauthorized: Invalid or missing API key' });
     return;
   }
 
@@ -445,10 +447,7 @@ module.exports = async (req, res) => {
     
     if (!file) {
       console.log('No file in upload');
-      if (!res.headersSent) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-      }
-      res.end(JSON.stringify({ error: 'No file uploaded' }));
+      sendResponse(res, 400, { error: 'No file uploaded' });
       return;
     }
 
@@ -487,13 +486,10 @@ module.exports = async (req, res) => {
 
     if (!imageName) {
       console.log('Missing metadata: name is required');
-      if (!res.headersSent) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-      }
-      res.end(JSON.stringify({ 
+      sendResponse(res, 400, {
         error: 'Missing metadata: name is required',
         received: { imageName }
-      }));
+      });
       return;
     }
 
@@ -545,10 +541,7 @@ module.exports = async (req, res) => {
     console.log('Upload successful, returning response');
     console.log('=== Upload Request Completed ===');
     
-    if (!res.headersSent) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-    }
-    res.end(JSON.stringify(successResponse));
+    sendResponse(res, 200, successResponse);
     return;
 
   } catch (error) {
@@ -556,13 +549,10 @@ module.exports = async (req, res) => {
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
     
-    if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-    }
-    res.end(JSON.stringify({ 
+    sendResponse(res, 500, {
       error: error.message || 'Upload failed',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }));
+    });
     return;
 
   } finally {
