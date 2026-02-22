@@ -129,7 +129,9 @@ module.exports = async (req, res) => {
           if (match) {
             const baseUrl = match[1];
             const version = match[2];
-            const publicId = match[3];
+            let publicId = match[3];
+            // Remove video file extension (.mp4, .mov, .avi, etc.) before appending .jpg
+            publicId = publicId.replace(/\.(mp4|mov|avi|mkv|flv|wmv|webm|m4v|mxf|ogv|ts)$/i, '');
             // Add transformations and .jpg extension for thumbnail
             thumbnailUrl = `${baseUrl}c_scale,w_300,h_300/${version}${publicId}.jpg`;
           }
