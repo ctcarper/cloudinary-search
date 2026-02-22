@@ -578,9 +578,9 @@
       ? `${window.location.origin}`
       : `https://cloudinary-search.vercel.app`;
 
-    // Get API key from URL parameter
+    // Get API key from URL parameter or global variable
     const urlParams = new URLSearchParams(window.location.search);
-    const API_KEY = urlParams.get('key');
+    const API_KEY = urlParams.get('key') || window.API_KEY || '';
 
     // Helper function to add API key to fetch requests
     function getApiHeaders(additionalHeaders = {}) {
