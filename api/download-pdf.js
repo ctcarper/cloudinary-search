@@ -5,6 +5,26 @@
 
 const https = require('https');
 
+// Allowed origins for referrer validation
+const ALLOWED_ORIGINS = [
+  'https://www.sigmasigma.org',
+  'https://sigmasigma.org',
+  'http://localhost',
+  'http://localhost:3000'
+];
+
+// Validate request origin
+function isAllowedOrigin(req) {
+  const referer = req.headers.referer || '';
+  const origin = req.headers.origin || '';
+  
+  // Check if referer starts with any allowed origin
+  const refererAllowed = ALLOWED_ORIGINS.some(allowed => referer.startsWith(allowed));
+  const originAllowed = ALLOWED_ORIGINS.some(allowed => origin === allowed);
+  
+  return refererAllowed || originAllowed;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -17,6 +37,11 @@ module.exports = async (req, res) => {
   try {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Validate origin
+    if (!isAllowedOrigin(req)) {
+      return res.status(403).json({ error: 'Access denied - invalid origin' });
     }
 
     // API key authentication

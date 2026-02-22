@@ -3,6 +3,26 @@
  * This allows large files to bypass the serverless function payload limit
  */
 
+// Allowed origins for referrer validation
+const ALLOWED_ORIGINS = [
+  'https://www.sigmasigma.org',
+  'https://sigmasigma.org',
+  'http://localhost',
+  'http://localhost:3000'
+];
+
+// Validate request origin
+function isAllowedOrigin(req) {
+  const referer = req.headers.referer || '';
+  const origin = req.headers.origin || '';
+  
+  // Check if referer starts with any allowed origin
+  const refererAllowed = ALLOWED_ORIGINS.some(allowed => referer.startsWith(allowed));
+  const originAllowed = ALLOWED_ORIGINS.some(allowed => origin === allowed);
+  
+  return refererAllowed || originAllowed;
+}
+
 module.exports = async (req, res) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,6 +33,11 @@ module.exports = async (req, res) => {
     res.writeHead(200);
     res.end();
     return;
+  }
+
+  // Validate origin
+  if (!isAllowedOrigin(req)) {
+    return res.status(403).json({ error: 'Access denied - invalid origin' });
   }
 
   // API key authentication
