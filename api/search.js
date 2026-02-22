@@ -119,10 +119,21 @@ module.exports = async (req, res) => {
     const safeResults = (data.resources || []).map(r => {
       let thumbnailUrl = r.thumbnail_url || null;
       
-      // If no thumbnail_url from Cloudinary, construct one for videos by converting to image resource
+      // If no thumbnail_url from Cloudinary, construct one for videos by appending .jpg with transformations
       if (!thumbnailUrl && r.resource_type === 'video') {
-        // Replace "/video/upload/" with "/image/upload/" to access the auto-generated thumbnail
-        thumbnailUrl = (r.secure_url || r.url)?.replace('/video/upload/', '/image/upload/');
+        const videoUrl = r.secure_url || r.url;
+        if (videoUrl) {
+          // Parse video URL to insert transformations and append .jpg
+          // Pattern: https://res.cloudinary.com/[cloud_name]/video/upload/[version]/[public_id]
+          const match = videoUrl.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)([^/]+\/)(.+)$/);
+          if (match) {
+            const baseUrl = match[1];
+            const version = match[2];
+            const publicId = match[3];
+            // Add transformations and .jpg extension for thumbnail
+            thumbnailUrl = `${baseUrl}c_scale,w_300,h_300/${version}${publicId}.jpg`;
+          }
+        }
       }
       
       return {
