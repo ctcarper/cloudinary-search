@@ -120,6 +120,7 @@ module.exports = async (req, res) => {
       asset_id: r.asset_id,
       public_id: r.public_id,
       secure_url: r.secure_url || r.url,
+      thumbnail_url: r.thumbnail_url || null,
       width: r.width,
       height: r.height,
       format: r.format,
