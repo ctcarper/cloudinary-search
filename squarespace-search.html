@@ -1014,6 +1014,19 @@
     }
 
     function closeModal() {
+      // Stop video and audio playback and clear sources
+      const videoEl = document.getElementById('modalVideo');
+      const audioEl = document.getElementById('modalAudio');
+      
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.src = '';
+      }
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.src = '';
+      }
+      
       document.getElementById('modal').classList.remove('active');
     }
 
