@@ -367,13 +367,11 @@ async function updateAssetWithOCRTags(cloudinary, publicId, ocrText) {
 
 // Helper function to send response with CORS headers
 function sendResponse(res, statusCode, body) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, x-api-key'
-  };
-  res.writeHead(statusCode, headers);
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.writeHead(statusCode);
   res.end(JSON.stringify(body));
 }
 
