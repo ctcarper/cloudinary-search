@@ -119,22 +119,18 @@ module.exports = async (req, res) => {
     const safeResults = (data.resources || []).map(r => {
       let thumbnailUrl = r.thumbnail_url || null;
       
-      // If no thumbnail_url from Cloudinary, construct one for videos by appending .jpg with transformations
+      // If no thumbnail_url from Cloudinary, construct one for videos by appending .gif with transformations
       if (!thumbnailUrl && r.resource_type === 'video') {
         const videoUrl = r.secure_url || r.url;
         if (videoUrl) {
-          // Parse video URL to insert transformations and append .jpg
-          // Pattern: https://res.cloudinary.com/[cloud_name]/video/upload/[version]/[public_id]
-          const match = videoUrl.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)([^/]+\/)(.+)$/);
-          if (match) {
-            const baseUrl = match[1];
-            const version = match[2];
-            let publicId = match[3];
-            // Remove video file extension (.mp4, .mov, .avi, etc.) before appending .jpg
-            publicId = publicId.replace(/\.(mp4|mov|avi|mkv|flv|wmv|webm|m4v|mxf|ogv|ts)$/i, '');
-            // Add transformations and .jpg extension for thumbnail
-            thumbnailUrl = `${baseUrl}c_scale,w_300,h_300/${version}${publicId}.jpg`;
-          }
+          // For video thumbnails, replace the file extension with .gif and insert transformations
+          // URL structure: https://res.cloudinary.com/[cloud]/video/upload/[version]/[path/to/file].[ext]
+          // Transform to: https://res.cloudinary.com/[cloud]/video/upload/c_scale,w_300,h_300/[version]/[path/to/file].gif
+          
+          // Remove any file extension and replace with .gif
+          const withoutExt = videoUrl.replace(/\.(mp4|mov|avi|mkv|flv|wmv|webm|m4v|mxf|ogv|ts)$/i, '');
+          // Insert transformations after /upload/
+          thumbnailUrl = withoutExt.replace('/video/upload/', '/video/upload/c_scale,w_300,h_300/') + '.gif';
         }
       }
       
