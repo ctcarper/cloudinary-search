@@ -183,8 +183,10 @@ async function uploadToCloudinary(filePath, filename, metadata) {
 
     // Get file stats to determine upload method
     const fileStats = fs.statSync(filePath);
-    const fileSizeMB = fileStats.size / (1024 * 1024);
-    console.log(`File size: ${fileSizeMB.toFixed(2)} MB`);
+    const fileSize = fileStats.size;
+    const fileSizeMB = fileSize / (1024 * 1024);
+    const fileSizeGB = fileSize / (1024 * 1024 * 1024);
+    console.log(`File size: ${fileSizeMB.toFixed(2)} MB (${fileSizeGB.toFixed(3)} GB) - ${fileSize} bytes`);
 
     console.log('Upload options:', JSON.stringify(options, null, 2));
     console.log('Tags being sent:', options.tags);
@@ -194,7 +196,7 @@ async function uploadToCloudinary(filePath, filename, metadata) {
     
     // For large files (>100MB), use streaming upload to avoid 413 payload errors
     if (fileSizeMB > 100) {
-      console.log('Using streaming upload for large file...');
+      console.log(`⚠️  Attempting streaming upload for large file (${fileSizeMB.toFixed(2)} MB)...`);
       // Add extended timeout for streaming uploads
       options.timeout = 300000; // 5 minute timeout for streaming
       
@@ -241,7 +243,7 @@ async function uploadToCloudinary(filePath, filename, metadata) {
       msg = `Cloudinary authentication failed - Check that CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET are correct. Full error: ${msg}`;
     }
     if (error.http_code === 413 || error.status === 413) {
-      msg = `Cloudinary 413 Payload Too Large - This shouldn't occur with streaming uploads. Try uploading again, or check if the video codec or format is supported. Full error: ${msg}`;
+      msg = `❌ Cloudinary 413 Payload Too Large - Your Cloudinary plan may have upload size limits. Check your account settings at dashboard.cloudinary.com. Error: ${msg}`;
     }
     throw new Error(`Cloudinary upload failed: ${msg}`);
   }
