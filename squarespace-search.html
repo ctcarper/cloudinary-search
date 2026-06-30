@@ -587,9 +587,9 @@
       >
       <select class="folder-select" id="folderSelect" title="Select a category to filter results">
         <option value="">All Categories</option>
+        <option value="__composites__">Composites</option>
       </select>
       <button type="submit" class="search-btn" id="searchBtn">Search</button>
-      <button type="button" class="search-btn" id="compositesBtn">Show Composites</button>
     </form>
 
     <div class="loading" id="loading">Loading results...</div>
@@ -1137,13 +1137,22 @@
     // Handle folder selection - show all images in that folder
     elements.folderSelect.addEventListener('change', (e) => {
       currentFolder = e.target.value;
-      currentQuery = ''; // Clear search query
-      elements.searchInput.value = ''; // Clear search input
+      currentQuery = '';
+      
+      // Handle composites special case
+      if (currentFolder === '__composites__') {
+        currentFolder = ''; // Reset folder for composites
+        currentQuery = 'composite';
+        elements.searchInput.value = 'composite';
+      } else {
+        elements.searchInput.value = ''; // Clear search input
+      }
+      
       currentCursor = null;
       searchHistory = [];
       
-      // Fetch all images in the selected folder
-      fetchResults('', null, DEFAULT_MAX_RESULTS);
+      // Fetch results
+      fetchResults(currentQuery, null, DEFAULT_MAX_RESULTS);
     });
 
     // Optional: Perform search on Enter key
@@ -1186,16 +1195,6 @@
         }, 2000);
       }
     }
-
-    // Show composites button handler
-    document.getElementById('compositesBtn').addEventListener('click', () => {
-      currentQuery = 'composite';
-      elements.searchInput.value = 'composite';
-      currentFolder = elements.folderSelect.value;
-      currentCursor = null;
-      searchHistory = [];
-      fetchResults('composite', null, DEFAULT_MAX_RESULTS);
-    });
 
     // Auto-load composites on initial page load
     window.addEventListener('load', () => {
