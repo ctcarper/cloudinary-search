@@ -676,8 +676,11 @@
         if (storedVersion && storedVersion !== currentVersion) {
           console.log(`Version update detected: ${storedVersion} → ${currentVersion}. Reloading...`);
           localStorage.setItem('appVersion', currentVersion);
-          // Reload with cache bust
-          window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+          // Reload with cache bust - only if 'v' parameter not already in URL
+          const currentUrlParams = new URLSearchParams(window.location.search);
+          if (!currentUrlParams.has('v')) {
+            window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+          }
         } else if (!storedVersion) {
           localStorage.setItem('appVersion', currentVersion);
         }
