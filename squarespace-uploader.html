@@ -444,6 +444,138 @@
       background: #ddd;
       cursor: not-allowed;
     }
+
+    /* Inline style replacements */
+    .files-list-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+    }
+
+    .files-grid {
+      display: grid;
+      gap: 15px;
+    }
+
+    .progress-card {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #C99A2C 0%, #B8862A 100%);
+      border-radius: 8px;
+      color: white;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .progress-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .progress-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .progress-right {
+      text-align: right;
+    }
+
+    .progress-bar-container {
+      background: rgba(255, 255, 255, 0.2);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      background: white;
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .progress-stat {
+      text-align: center;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .progress-stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .progress-stat-value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .loading-overlay {
+      position: static;
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .current-file-status {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .summary-content {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .form-field-base {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    #batchFolderSelect,
+    #batchTagsInput {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
   </style>
 </head>
 <body>
@@ -466,15 +598,15 @@
     <div id="combinedSection" class="preview-section">
       <div class="form-group">
         <label>Files to Upload (<span id="fileCount">0</span>)</label>
-        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 10px;">
-          <div id="filesList" style="display: grid; gap: 15px;">
+        <div class="files-list-container">
+          <div id="filesList" class="files-grid">
           </div>
         </div>
       </div>
 
       <div class="form-group">
         <label for="batchFolderSelect">Default Media Library Folder</label>
-        <select id="batchFolderSelect" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">
+        <select id="batchFolderSelect">
           <option value="">Loading folders...</option>
         </select>
         <div class="hint-text">Set a default folder for all files (can be overridden per file)</div>
@@ -482,7 +614,7 @@
 
       <div class="form-group">
         <label for="batchTagsInput">Default Tags (Optional)</label>
-        <input type="text" id="batchTagsInput" placeholder="e.g., Event 2024, Winter Collection, Project A" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+        <input type="text" id="batchTagsInput" placeholder="e.g., Event 2024, Winter Collection, Project A">
         <div class="hint-text">Tags to apply to all files (can be overridden per file)</div>
       </div>
 
@@ -494,42 +626,42 @@
 
     <!-- Upload Progress Section -->
     <div id="progressSection" class="preview-section">
-      <div style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #C99A2C 0%, #B8862A 100%); border-radius: 8px; color: white;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <div class="progress-card">
+        <div class="progress-header">
           <div>
-            <div style="font-size: 14px; opacity: 0.9;">Upload Progress</div>
-            <div style="font-size: 24px; font-weight: bold;">File <span id="uploadProgress">0</span> of <span id="uploadTotal">0</span></div>
+            <div class="progress-label">Upload Progress</div>
+            <div class="progress-value">File <span id="uploadProgress">0</span> of <span id="uploadTotal">0</span></div>
           </div>
-          <div style="text-align: right;">
-            <div style="font-size: 14px; opacity: 0.9;">Videos Uploaded</div>
-            <div style="font-size: 24px; font-weight: bold;" id="totalVideosUploaded">0</div>
+          <div class="progress-right">
+            <div class="progress-label">Videos Uploaded</div>
+            <div class="progress-value" id="totalVideosUploaded">0</div>
           </div>
         </div>
-        <div style="background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px; overflow: hidden;">
-          <div id="uploadProgressBar" style="background: white; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+        <div class="progress-bar-container">
+          <div id="uploadProgressBar" class="progress-bar-fill"></div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px;">
-          <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-            <div style="font-size: 12px; opacity: 0.9;">Uploaded</div>
-            <div style="font-size: 18px; font-weight: bold;" id="realtimeSuccess">0</div>
+        <div class="progress-stats">
+          <div class="progress-stat">
+            <div class="progress-stat-label">Uploaded</div>
+            <div class="progress-stat-value" id="realtimeSuccess">0</div>
           </div>
-          <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-            <div style="font-size: 12px; opacity: 0.9;">Failed</div>
-            <div style="font-size: 18px; font-weight: bold;" id="realtimeFailed">0</div>
+          <div class="progress-stat">
+            <div class="progress-stat-label">Failed</div>
+            <div class="progress-stat-value" id="realtimeFailed">0</div>
           </div>
-          <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-            <div style="font-size: 12px; opacity: 0.9;">Skipped</div>
-            <div style="font-size: 18px; font-weight: bold;" id="realtimeSkipped">0</div>
+          <div class="progress-stat">
+            <div class="progress-stat-label">Skipped</div>
+            <div class="progress-stat-value" id="realtimeSkipped">0</div>
           </div>
         </div>
       </div>
 
-      <div id="loading" class="loading" style="position: static; background: transparent; display: flex; justify-content: center; align-items: center; padding: 20px; gap: 15px; margin-bottom: 20px; display: none;">
+      <div id="loading" class="loading loading-overlay">
         <div class="spinner"></div>
-        <div id="loadingText" style="color: #333; font-weight: 500;">Processing file...</div>
+        <div id="loadingText" class="loading-text">Processing file...</div>
       </div>
 
-      <div id="currentFileStatus" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none;">
+      <div id="currentFileStatus" class="current-file-status">
         <strong>Currently uploading: <span id="currentFileName"></span></strong>
       </div>
     </div>
@@ -538,7 +670,7 @@
     <div id="summarySection" class="preview-section">
       <div class="form-group">
         <label>Upload Summary</label>
-        <div id="summaryContent" style="background: #f8f9fa; padding: 15px; border-radius: 6px; font-size: 14px; line-height: 1.6;">
+        <div id="summaryContent" class="summary-content">
         </div>
       </div>
 

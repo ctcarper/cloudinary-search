@@ -14,7 +14,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background-color: #f9f9f9;
+      background-color: #000000;
       padding: 20px;
     }
 
@@ -509,6 +509,29 @@
       border-radius: 4px;
       font-size: 0.85rem;
     }
+
+    .hidden {
+      display: none;
+    }
+
+    .audio-placeholder-title {
+      font-size: 2rem;
+    }
+
+    .pdf-placeholder-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .pdf-message {
+      margin: 0;
+      color: #666;
+    }
+
+    .pdf-download-button {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -528,7 +551,7 @@
         placeholder="Type a name or year to find specific images"
         autocomplete="off"
       >
-      <select class="folder-select" id="folderSelect">
+      <select class="folder-select" id="folderSelect" title="Select a category to filter results">
         <option value="">All Categories</option>
       </select>
       <button type="submit" class="search-btn" id="searchBtn">Search</button>
@@ -546,9 +569,9 @@
       <div class="modal-content">
         <button class="modal-close" onclick="closeModal()">&times;</button>
         <div id="modalMediaContainer">
-          <img id="modalImage" class="modal-image" src="" alt="" style="display:none;">
-          <video id="modalVideo" class="modal-video" controls autoplay style="display:none;"></video>
-          <div id="audioPlaceholder" class="audio-placeholder" style="display:none;">
+          <img id="modalImage" class="modal-image hidden" src="" alt="">
+          <video id="modalVideo" class="modal-video hidden" controls autoplay></video>
+          <div id="audioPlaceholder" class="audio-placeholder hidden">
             <div class="audio-waveform">
               <div class="audio-bar"></div>
               <div class="audio-bar"></div>
@@ -556,13 +579,13 @@
               <div class="audio-bar"></div>
               <div class="audio-bar"></div>
             </div>
-            <div style="font-size: 2rem;">🎵 Audio</div>
+            <div class="audio-placeholder-title">🎵 Audio</div>
           </div>
-          <audio id="modalAudio" class="modal-audio" controls style="display:none;"></audio>
-          <div id="pdfPlaceholder" class="pdf-placeholder" style="display:none;">
-            <div style="font-size: 4rem; margin-bottom: 1rem;">📄</div>
-            <p id="pdfMessage" style="margin: 0; color: #666;">
-              <button id="pdfDownloadButton" class="search-btn" style="padding: 8px 16px; font-size: 14px;">Download PDF</button>
+          <audio id="modalAudio" class="modal-audio hidden" controls></audio>
+          <div id="pdfPlaceholder" class="pdf-placeholder hidden">
+            <div class="pdf-placeholder-icon">📄</div>
+            <p id="pdfMessage" class="pdf-message">
+              <button id="pdfDownloadButton" class="search-btn pdf-download-button">Download PDF</button>
             </p>
           </div>
         </div>
@@ -618,8 +641,11 @@
         if (storedVersion && storedVersion !== currentVersion) {
           console.log(`Version update detected: ${storedVersion} → ${currentVersion}. Reloading...`);
           localStorage.setItem('appVersion', currentVersion);
-          // Reload with cache bust
-          window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+          // Reload with cache bust only if we haven't just reloaded
+          const urlParams = new URLSearchParams(window.location.search);
+          if (!urlParams.has('v')) {
+            window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+          }
         } else if (!storedVersion) {
           localStorage.setItem('appVersion', currentVersion);
         }
@@ -727,6 +753,16 @@
 
     // Also load on dropdown focus as fallback
     elements.folderSelect.addEventListener('focus', loadFolders, { once: true });
+
+    // Auto-load composites on page load
+    window.addEventListener('load', () => {
+      currentQuery = 'composite';
+      elements.searchInput.value = 'composite';
+      currentFolder = '';
+      currentCursor = null;
+      searchHistory = [];
+      fetchResults('composite', null, DEFAULT_MAX_RESULTS);
+    });
 
     function showError(message) {
       elements.error.textContent = message;
@@ -905,21 +941,21 @@
       const isPDF = (item.resource_type === 'image' && (item.tags?.includes('pdf') || item.format === 'pdf'));
       
       // Hide all media elements and show the appropriate one
-      document.getElementById('modalImage').style.display = 'none';
-      document.getElementById('modalVideo').style.display = 'none';
-      document.getElementById('modalAudio').style.display = 'none';
-      document.getElementById('audioPlaceholder').style.display = 'none';
-      document.getElementById('pdfPlaceholder').style.display = 'none';
+      document.getElementById('modalImage').classList.add('hidden');
+      document.getElementById('modalVideo').classList.add('hidden');
+      document.getElementById('modalAudio').classList.add('hidden');
+      document.getElementById('audioPlaceholder').classList.add('hidden');
+      document.getElementById('pdfPlaceholder').classList.add('hidden');
       
       if (isVideo) {
         const videoEl = document.getElementById('modalVideo');
         videoEl.src = item.secure_url;
-        videoEl.style.display = 'block';
+        videoEl.classList.remove('hidden');
         videoEl.play();
       } else if (isAudio) {
-        document.getElementById('audioPlaceholder').style.display = 'flex';
+        document.getElementById('audioPlaceholder').classList.remove('hidden');
         document.getElementById('modalAudio').src = item.secure_url;
-        document.getElementById('modalAudio').style.display = 'block';
+        document.getElementById('modalAudio').classList.remove('hidden');
       } else if (isPDF) {
         // For PDFs, show a preview image plus the download button
         const urlMatch = item.secure_url.match(/https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/(v\d+)\/(.*)/);
@@ -932,7 +968,7 @@
           // Create preview URL with transformation to render PDF as image
           const previewUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_scale,w_600,h_800,f_auto/${version}/${publicId}`;
           document.getElementById('modalImage').src = previewUrl;
-          document.getElementById('modalImage').style.display = 'block';
+          document.getElementById('modalImage').classList.remove('hidden');
           
           // Set up download button with server-side proxy endpoint
           const fileName = item.public_id.split('/').pop() || 'document.pdf';
@@ -981,10 +1017,10 @@
             }
           };
         }
-        document.getElementById('pdfPlaceholder').style.display = 'flex';
+        document.getElementById('pdfPlaceholder').classList.remove('hidden');
       } else {
         document.getElementById('modalImage').src = item.secure_url;
-        document.getElementById('modalImage').style.display = 'block';
+        document.getElementById('modalImage').classList.remove('hidden');
       }
       
       document.getElementById('modalTitle').textContent = item.public_id;
