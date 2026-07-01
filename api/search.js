@@ -27,11 +27,20 @@ function isAllowedOrigin(req) {
 }
 
 module.exports = async (req, res) => {
+  // Set CORS headers for allowed origins (Vercel serverless functions)
+  const origin = req.headers.origin || '';
+  if (isAllowedOrigin(req)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Validate origin (dev-server.js handles CORS headers, this is additional validation)
+  // Validate origin - reject if not allowed
   if (!isAllowedOrigin(req)) {
     return res.status(403).json({ error: 'Access denied - invalid origin' });
   }
