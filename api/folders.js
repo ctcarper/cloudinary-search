@@ -161,11 +161,6 @@ module.exports = async (req, res) => {
   console.log('CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? '✓ Set' : '✗ NOT SET');
   console.log('UPLOADER_API_KEY:', process.env.UPLOADER_API_KEY ? '✓ Set' : '✗ NOT SET');
 
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
     res.end();
@@ -175,6 +170,13 @@ module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  // Validate origin (dev-server.js handles CORS headers, this is additional validation)
+  if (!isAllowedOrigin(req)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Access denied - invalid origin' }));
     return;
   }
 

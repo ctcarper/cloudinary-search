@@ -9,10 +9,27 @@ const foldersHandler = require('./api/folders.js');
 const signUploadHandler = require('./api/sign-upload.js');
 const downloadPdfHandler = require('./api/download-pdf.js');
 
+// Allowed origins for CORS and security
+const ALLOWED_ORIGINS = [
+  'https://www.sigmasigma.org',
+  'https://sigmasigma.org'
+];
+
+// Add localhost for development
+if (process.env.NODE_ENV !== 'production') {
+  ALLOWED_ORIGINS.push('http://localhost', 'http://localhost:3000');
+}
+
+function isOriginAllowed(origin) {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed));
+}
+
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
   const pathname = parsedUrl.pathname;
   const method = req.method;
+  const origin = req.headers.origin || req.headers.referer || '';
 
   // Parse query parameters (Vercel compatibility)
   req.query = {};
@@ -20,10 +37,18 @@ const server = http.createServer((req, res) => {
     req.query[key] = value;
   }
 
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Security headers (apply to all responses)
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' https://res.cloudinary.com https://cloudinary-search.vercel.app; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
+
+  // CORS headers (only for allowed origins)
+  if (isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  }
 
   if (method === 'OPTIONS') {
     res.writeHead(200);

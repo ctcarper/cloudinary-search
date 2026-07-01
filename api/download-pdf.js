@@ -32,10 +32,6 @@ function isAllowedOrigin(req) {
 }
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-
   if (req.method === 'OPTIONS') {
     return res.writeHead(200);
   }
@@ -45,7 +41,7 @@ module.exports = async (req, res) => {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Validate origin
+    // Validate origin (dev-server.js handles CORS headers, this is additional validation)
     if (!isAllowedOrigin(req)) {
       return res.status(403).json({ error: 'Access denied - invalid origin' });
     }
@@ -81,6 +77,29 @@ module.exports = async (req, res) => {
     if (!cloudName || !publicId) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: 'cloudName and publicId are required' }));
+    }
+
+    // Validate cloudName and publicId format to prevent URL injection
+    const CLOUD_NAME_REGEX = /^[a-z0-9-]+$/;
+    const PUBLIC_ID_REGEX = /^[a-zA-Z0-9\/_-]+$/;
+    const VERSION_REGEX = /^v\d+$/;
+
+    if (!CLOUD_NAME_REGEX.test(cloudName)) {
+      console.warn('Invalid cloudName format:', cloudName);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Invalid cloudName format' }));
+    }
+
+    if (!PUBLIC_ID_REGEX.test(publicId)) {
+      console.warn('Invalid publicId format:', publicId);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Invalid publicId format' }));
+    }
+
+    if (version && !VERSION_REGEX.test(version)) {
+      console.warn('Invalid version format:', version);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Invalid version format' }));
     }
 
     // Construct permanent CDN URL with version number (version is required for folder-based PDFs)

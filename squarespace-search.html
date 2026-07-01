@@ -650,9 +650,9 @@
       ? `${window.location.origin}/api/download-pdf`
       : `https://cloudinary-search.vercel.app/api/download-pdf`;
     
-    // Get API key from URL parameter or global variable
-    const urlParams = new URLSearchParams(window.location.search);
-    const API_KEY = urlParams.get('key') || window.API_KEY || '';
+    // Get API key from global variable ONLY (NOT from URL - URL params are logged in history/referer headers)
+    const API_KEY = window.API_KEY || '';
+    const REQUEST_TIMEOUT = 5000; // 5 second timeout
 
     // Helper function to add API key to fetch requests
     function getApiHeaders(additionalHeaders = {}) {
@@ -662,11 +662,32 @@
       }
       return headers;
     }
+
+    // Helper function to fetch with timeout protection
+    async function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout - please try again');
+        }
+        throw error;
+      }
+    }
     
     // Version checking
     async function checkVersion() {
       try {
-        const response = await fetch(VERSION_API_URL, {
+        const response = await fetchWithTimeout(VERSION_API_URL, {
           headers: getApiHeaders()
         });
         const versionData = await response.json();
@@ -735,7 +756,7 @@
 
       // Fetch fresh if no cache
       try {
-        const response = await fetch(FOLDERS_API_URL + `?t=${Date.now()}`, {
+        const response = await fetchWithTimeout(FOLDERS_API_URL + `?t=${Date.now()}`, {
           headers: getApiHeaders()
         });
         const data = await response.json();
@@ -817,7 +838,7 @@
         if (maxResults) params.append('max_results', maxResults);
         if (currentFolder) params.append('folder', currentFolder);
 
-        const response = await fetch(`${API_URL}?${params.toString()}`, {
+        const response = await fetchWithTimeout(`${API_URL}?${params.toString()}`, {
           headers: getApiHeaders()
         });
         
@@ -830,7 +851,12 @@
         displayResults(data, query);
         showLoading(false);
       } catch (err) {
-        showError(`Error: ${err.message}`);
+        // Only show generic error to user, full error logged to console
+        console.error('Fetch error:', err);
+        const userMessage = err.message === 'Request timeout - please try again' 
+          ? err.message 
+          : 'Failed to load results. Please try again.';
+        showError(userMessage);
         showLoading(false);
       }
     }
@@ -1019,7 +1045,7 @@
                 : `https://cloudinary-search.vercel.app/api/download-pdf`;
               
               // Pass cloudName, version, and publicId to construct permanent CDN URL on server
-              const response = await fetch(API_DOWNLOAD_URL, {
+              const response = await fetchWithTimeout(API_DOWNLOAD_URL, {
                 method: 'POST',
                 headers: getApiHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
@@ -1170,7 +1196,7 @@
         // Show spinner
         downloadBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation: spin 1s linear infinite;"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="12.5 19.63" /></svg>';
         
-        const response = await fetch(imageUrl);
+        const response = await fetchWithTimeout(imageUrl);
         if (!response.ok) throw new Error('Failed to download');
         const blob = await response.blob();
         

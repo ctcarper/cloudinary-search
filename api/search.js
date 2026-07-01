@@ -27,15 +27,11 @@ function isAllowedOrigin(req) {
 }
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Validate origin
+  // Validate origin (dev-server.js handles CORS headers, this is additional validation)
   if (!isAllowedOrigin(req)) {
     return res.status(403).json({ error: 'Access denied - invalid origin' });
   }
@@ -111,7 +107,9 @@ module.exports = async (req, res) => {
 
     if (!resp.ok) {
       const text = await resp.text();
-      return res.status(resp.status).json({ error: 'Cloudinary error', detail: text });
+      // Log full error for debugging, but only return generic error to client
+      console.error('Cloudinary API error:', resp.status, text);
+      return res.status(resp.status).json({ error: 'Search service unavailable' });
     }
 
     const data = await resp.json();
