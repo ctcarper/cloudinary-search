@@ -10,37 +10,5 @@
       "source": "/uploader",
       "destination": "/api/uploader"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/upload",
-      "dest": "/api/upload.js",
-      "methods": ["GET", "POST", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://www.sigmasigma.org",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, x-api-key, Content-Length"
-      }
-    },
-    {
-      "src": "/api/folders",
-      "dest": "/api/folders.js",
-      "methods": ["GET", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://www.sigmasigma.org",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, x-api-key"
-      }
-    },
-    {
-      "src": "/api/search",
-      "dest": "/api/search.js",
-      "methods": ["POST", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://www.sigmasigma.org",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, x-api-key"
-      }
-    }
   ]
 }

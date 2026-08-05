@@ -27,18 +27,24 @@ function isAllowedOrigin(req) {
 }
 
 module.exports = async (req, res) => {
-  // Set CORS headers for allowed origins (Vercel serverless functions)
-  const origin = req.headers.origin || '';
-  if (isAllowedOrigin(req)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-    res.setHeader('Access-Control-Max-Age', '86400');
+  // Handle OPTIONS requests (preflight) FIRST with proper CORS headers
+  if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request for /api/search');
+    res.writeHead(200, {
+      'Access-Control-Allow-Origin': 'https://www.sigmasigma.org',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+      'Access-Control-Max-Age': '86400'
+    });
+    res.end();
+    return;
   }
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  // Set CORS headers for non-OPTIONS requests
+  res.setHeader('Access-Control-Allow-Origin', 'https://www.sigmasigma.org');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Max-Age', '86400');
 
   // Validate origin - reject if not allowed
   if (!isAllowedOrigin(req)) {
