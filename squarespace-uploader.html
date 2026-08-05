@@ -1054,7 +1054,6 @@
         if (fileSizeMB > 3) {
           console.log(`📤 Routing to DIRECT Cloudinary (large file: ${fileSizeMB.toFixed(2)}MB > 3MB threshold)`);
           data = await uploadDirectToCloudinary(item);
-          data = await uploadDirectToCloudinary(item);
           if (!data.success) {
             throw new Error('Direct upload failed');
           }
