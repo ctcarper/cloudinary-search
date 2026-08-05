@@ -377,7 +377,8 @@ async function updateAssetWithOCRTags(cloudinary, publicId, ocrText) {
 function sendResponse(res, statusCode, body) {
   // CORS headers already set in main handler, just set content type and send response
   res.setHeader('Content-Type', 'application/json');
-  res.status(statusCode).json(body);
+  res.statusCode = statusCode;
+  res.end(JSON.stringify(body));
 }
 
 // Main handler (Vercel serverless format)
