@@ -412,179 +412,186 @@ module.exports = async (req, res) => {
       return;
     }
 
-  // Validate origin
-  if (!isAllowedOrigin(req)) {
-    console.log('Origin validation failed');
-    sendResponse(res, 403, { error: 'Access denied - invalid origin' });
-    return;
-  }
-
-  // API key authentication
-  const apiKey = req.query.key || req.headers['x-api-key'];
-  const validKey = process.env.UPLOADER_API_KEY;
-
-  if (!validKey) {
-    sendResponse(res, 500, { error: 'Server configuration error' });
-    return;
-  }
-
-  if (!apiKey || apiKey !== validKey) {
-    sendResponse(res, 401, { error: 'Unauthorized: Invalid or missing API key' });
-    return;
-  }
-
-  let tempFilePath = null;
-
-  try {
-    console.log('Parsing form data...');
-    
-    // Parse form data
-    const { fields, files } = await parseForm(req);
-    
-    console.log('Form parsed. Files object:', files);
-    console.log('Files keys:', Object.keys(files));
-    
-    // Handle different formidable versions
-    let file;
-    if (files.file) {
-      // Newer versions return arrays
-      if (Array.isArray(files.file)) {
-        file = files.file[0];
-      } else {
-        // Older versions return objects directly
-        file = files.file;
-      }
-    }
-    
-    console.log('File object:', file);
-    
-    if (!file) {
-      console.log('No file in upload');
-      sendResponse(res, 400, { error: 'No file uploaded' });
+    // Validate origin
+    if (!isAllowedOrigin(req)) {
+      console.log('Origin validation failed');
+      sendResponse(res, 403, { error: 'Access denied - invalid origin' });
       return;
     }
 
-    tempFilePath = file.filepath;
-    console.log('File received:', file.originalFilename || file.name, 'Path:', tempFilePath, 'Size:', file.size);
+    // API key authentication
+    const apiKey = req.query.key || req.headers['x-api-key'];
+    const validKey = process.env.UPLOADER_API_KEY;
 
-    // Extract metadata
-    const imageName = Array.isArray(fields.name) ? fields.name[0] : fields.name;
-    const tapYear = Array.isArray(fields.tapYear) ? fields.tapYear[0] : (fields.tapYear || null);
-    const folder = Array.isArray(fields.folder) ? fields.folder[0] : (fields.folder || null);
-    
-    // Extract tags (can be a JSON string if sent from frontend)
-    let additionalTags = [];
-    if (fields.tags) {
-      const tagsValue = Array.isArray(fields.tags) ? fields.tags[0] : fields.tags;
-      try {
-        additionalTags = JSON.parse(tagsValue);
-      } catch (e) {
-        // If not JSON, split by comma
-        additionalTags = tagsValue.split(',').map(t => t.trim()).filter(t => t);
-      }
-    }
-    
-    // Detect file type based on MIME type
-    const mimeType = file.mimetype || '';
-    const isImage = mimeType.startsWith('image/');
-    const isAudio = mimeType.startsWith('audio/');
-    const isPDF = mimeType === 'application/pdf' || file.originalFilename?.toLowerCase().endsWith('.pdf');
-    console.log('File MIME type:', mimeType);
-    console.log('Is image:', isImage);
-    console.log('Is audio:', isAudio);
-    console.log('Is PDF:', isPDF);
-    console.log('Additional tags:', additionalTags);
-
-    console.log('Metadata:', { imageName, tapYear, folder, isImage, isAudio, isPDF });
-
-    if (!imageName) {
-      console.log('Missing metadata: name is required');
-      sendResponse(res, 400, {
-        error: 'Missing metadata: name is required',
-        received: { imageName }
-      });
+    if (!validKey) {
+      sendResponse(res, 500, { error: 'Server configuration error' });
       return;
     }
 
-    console.log('Starting Cloudinary upload...');
-    
-    // Upload to Cloudinary
-    const filename = file.originalFilename || file.name || 'image.jpg';
-    const cloudinaryResponse = await uploadToCloudinary(
-      tempFilePath,
-      filename,
-      { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage, isAudio: isAudio, isPDF: isPDF, additionalTags: additionalTags }
-    );
+    if (!apiKey || apiKey !== validKey) {
+      sendResponse(res, 401, { error: 'Unauthorized: Invalid or missing API key' });
+      return;
+    }
 
-    console.log('Cloudinary upload complete. Response keys:', Object.keys(cloudinaryResponse));
+    let tempFilePath = null;
 
-    // Extract OCR text and update tags (only for images)
-    let ocrText = '';
-    if (isImage) {
-      ocrText = extractOCRText(cloudinaryResponse);
+    try {
+      console.log('Parsing form data...');
       
-      if (ocrText) {
-        console.log('Updating asset with OCR tags...');
-        await updateAssetWithOCRTags(cloudinary, cloudinaryResponse.public_id, ocrText);
-      }
-    } else {
-      console.log('Skipping OCR processing for non-image file');
-    }
-
-    console.log('Preparing success response...');
-
-    // Return success response
-    const successResponse = {
-      success: true,
-      publicId: cloudinaryResponse.public_id,
-      secureUrl: cloudinaryResponse.secure_url,
-      name: imageName,
-      ocrText: ocrText,
-      tags: cloudinaryResponse.tags || [imageName].filter(tag => tag),
-      context: cloudinaryResponse.context || { custom: { name: imageName } },
-      metadata: {
-        width: cloudinaryResponse.width,
-        height: cloudinaryResponse.height,
-        format: cloudinaryResponse.format,
-        bytes: cloudinaryResponse.bytes,
-        createdAt: cloudinaryResponse.created_at
-      }
-    };
-
-    console.log('Upload successful, returning response');
-    console.log('=== Upload Request Completed ===');
-    
-    sendResponse(res, 200, successResponse);
-    return;
-
-  } catch (error) {
-    console.error('=== Upload Error ===');
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    
-    sendResponse(res, 500, {
-      error: error.message || 'Upload failed',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-    return;
-
-  } finally {
-    // Clean up temp file asynchronously with a small delay to allow streams to close
-    if (tempFilePath && fs.existsSync(tempFilePath)) {
-      // Use setTimeout to defer deletion slightly, allowing streams to finish closing
-      setImmediate(() => {
-        try {
-          fs.unlink(tempFilePath, (err) => {
-            if (err) {
-              console.warn('Failed to clean up temp file:', err.message);
-            } else {
-              console.log('Temp file cleaned up');
-            }
-          });
-        } catch (e) {
-          console.warn('Error scheduling temp file cleanup:', e.message);
+      // Parse form data
+      const { fields, files } = await parseForm(req);
+      
+      console.log('Form parsed. Files object:', files);
+      console.log('Files keys:', Object.keys(files));
+      
+      // Handle different formidable versions
+      let file;
+      if (files.file) {
+        // Newer versions return arrays
+        if (Array.isArray(files.file)) {
+          file = files.file[0];
+        } else {
+          // Older versions return objects directly
+          file = files.file;
         }
+      }
+      
+      console.log('File object:', file);
+      
+      if (!file) {
+        console.log('No file in upload');
+        sendResponse(res, 400, { error: 'No file uploaded' });
+        return;
+      }
+
+      tempFilePath = file.filepath;
+      console.log('File received:', file.originalFilename || file.name, 'Path:', tempFilePath, 'Size:', file.size);
+
+      // Extract metadata
+      const imageName = Array.isArray(fields.name) ? fields.name[0] : fields.name;
+      const tapYear = Array.isArray(fields.tapYear) ? fields.tapYear[0] : (fields.tapYear || null);
+      const folder = Array.isArray(fields.folder) ? fields.folder[0] : (fields.folder || null);
+      
+      // Extract tags (can be a JSON string if sent from frontend)
+      let additionalTags = [];
+      if (fields.tags) {
+        const tagsValue = Array.isArray(fields.tags) ? fields.tags[0] : fields.tags;
+        try {
+          additionalTags = JSON.parse(tagsValue);
+        } catch (e) {
+          // If not JSON, split by comma
+          additionalTags = tagsValue.split(',').map(t => t.trim()).filter(t => t);
+        }
+      }
+      
+      // Detect file type based on MIME type
+      const mimeType = file.mimetype || '';
+      const isImage = mimeType.startsWith('image/');
+      const isAudio = mimeType.startsWith('audio/');
+      const isPDF = mimeType === 'application/pdf' || file.originalFilename?.toLowerCase().endsWith('.pdf');
+      console.log('File MIME type:', mimeType);
+      console.log('Is image:', isImage);
+      console.log('Is audio:', isAudio);
+      console.log('Is PDF:', isPDF);
+      console.log('Additional tags:', additionalTags);
+
+      console.log('Metadata:', { imageName, tapYear, folder, isImage, isAudio, isPDF });
+
+      if (!imageName) {
+        console.log('Missing metadata: name is required');
+        sendResponse(res, 400, {
+          error: 'Missing metadata: name is required',
+          received: { imageName }
+        });
+        return;
+      }
+
+      console.log('Starting Cloudinary upload...');
+      
+      // Upload to Cloudinary
+      const filename = file.originalFilename || file.name || 'image.jpg';
+      const cloudinaryResponse = await uploadToCloudinary(
+        tempFilePath,
+        filename,
+        { name: imageName, tapYear: tapYear, folder: folder, isImage: isImage, isAudio: isAudio, isPDF: isPDF, additionalTags: additionalTags }
+      );
+
+      console.log('Cloudinary upload complete. Response keys:', Object.keys(cloudinaryResponse));
+
+      // Extract OCR text and update tags (only for images)
+      let ocrText = '';
+      if (isImage) {
+        ocrText = extractOCRText(cloudinaryResponse);
+        
+        if (ocrText) {
+          console.log('Updating asset with OCR tags...');
+          await updateAssetWithOCRTags(cloudinary, cloudinaryResponse.public_id, ocrText);
+        }
+      } else {
+        console.log('Skipping OCR processing for non-image file');
+      }
+
+      console.log('Preparing success response...');
+
+      // Return success response
+      const successResponse = {
+        success: true,
+        publicId: cloudinaryResponse.public_id,
+        secureUrl: cloudinaryResponse.secure_url,
+        name: imageName,
+        ocrText: ocrText,
+        tags: cloudinaryResponse.tags || [imageName].filter(tag => tag),
+        context: cloudinaryResponse.context || { custom: { name: imageName } },
+        metadata: {
+          width: cloudinaryResponse.width,
+          height: cloudinaryResponse.height,
+          format: cloudinaryResponse.format,
+          bytes: cloudinaryResponse.bytes,
+          createdAt: cloudinaryResponse.created_at
+        }
+      };
+
+      console.log('Upload successful, returning response');
+      console.log('=== Upload Request Completed ===');
+      
+      sendResponse(res, 200, successResponse);
+      return;
+
+    } catch (error) {
+      console.error('=== Upload Error ===');
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      sendResponse(res, 500, {
+        error: error.message || 'Upload failed',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
+      return;
+
+    } finally {
+      // Clean up temp file asynchronously with a small delay to allow streams to close
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        // Use setTimeout to defer deletion slightly, allowing streams to finish closing
+        setImmediate(() => {
+          try {
+            fs.unlink(tempFilePath, (err) => {
+              if (err) {
+                console.warn('Failed to clean up temp file:', err.message);
+              } else {
+                console.log('Temp file cleaned up');
+              }
+            });
+          } catch (e) {
+            console.warn('Error scheduling temp file cleanup:', e.message);
+          }
+        });
+      }
     }
+  } catch (err) {
+    // Fallback error handler
+    console.error('Unhandled error:', err);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Internal server error' }));
   }
 };
