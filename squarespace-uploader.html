@@ -1045,21 +1045,22 @@
         if (uploadProgressBarEl) uploadProgressBarEl.style.width = '0%';
 
         const fileSizeMB = item.file.size / (1024 * 1024);
-        console.log(`📊 File: ${item.file.name}, Size: ${fileSizeMB.toFixed(2)}MB`);
+        console.log(`📊 File: ${item.file.name}, Size: ${fileSizeMB.toFixed(2)}MB, Type: ${item.type}`);
         let data;
 
-        // For large files (>3MB), use direct Cloudinary upload to bypass Vercel limits
-        // Vercel serverless limit is 4.5MB for entire payload (including multipart overhead)
-        // Using 3MB threshold to ensure safety; larger files upload direct to Cloudinary
-        if (fileSizeMB > 3) {
-          console.log(`📤 Routing to DIRECT Cloudinary (large file: ${fileSizeMB.toFixed(2)}MB > 3MB threshold)`);
+        // Route by file type:
+        // - Images & videos: always use direct Cloudinary (bypasses Vercel 4.5MB limit)
+        // - Audio & PDF: route through Vercel backend
+        // Vercel limit is 4.5MB, but direct Cloudinary has no limit
+        if (item.type === 'image' || item.type === 'video') {
+          console.log(`📤 Routing to DIRECT Cloudinary (${item.type})`);
           data = await uploadDirectToCloudinary(item);
           if (!data.success) {
             throw new Error('Direct upload failed');
           }
         } else {
-          console.log(`📥 Routing through Vercel backend (small file: ${fileSizeMB.toFixed(2)}MB ≤ 3MB)`);
-          // Use server upload for small files
+          console.log(`📥 Routing through Vercel backend (${item.type})`);
+          // Audio and PDF files go through backend
           data = await uploadViaServer(item);
         }
 
