@@ -16,6 +16,11 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 
+// ✅ CRITICAL: Force Node.js runtime (prevents Edge Function deployment which breaks CORS)
+module.exports.config = {
+  runtime: 'nodejs'
+};
+
 // Allowed origins for referrer validation
 const ALLOWED_ORIGINS = [
   'https://www.sigmasigma.org',
