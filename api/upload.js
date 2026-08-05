@@ -373,14 +373,10 @@ async function updateAssetWithOCRTags(cloudinary, publicId, ocrText) {
   }
 }
 
-// Helper function to send response with CORS headers
+// Helper function to send response (CORS headers already set by main handler)
 function sendResponse(res, statusCode, body) {
-  // Use res.setHeader() consistently (native Node.js method, Vercel-compatible)
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
+  // CORS headers already set in main handler, just set content type and send response
   res.setHeader('Content-Type', 'application/json');
-  
   res.status(statusCode).json(body);
 }
 
@@ -396,8 +392,10 @@ module.exports = async (req, res) => {
     // Use writeHead() which atomically sets status + headers (more reliable on Vercel)
     if (req.method === 'OPTIONS') {
       console.log('Handling OPTIONS request');
+      // With custom headers (x-api-key), must use specific origin, not wildcard
+      const origin = req.headers.origin || 'https://www.sigmasigma.org';
       res.writeHead(200, {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
         'Access-Control-Max-Age': '86400'
@@ -407,7 +405,9 @@ module.exports = async (req, res) => {
     }
 
     // Set CORS headers for non-OPTIONS requests
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // With custom headers (x-api-key), must use specific origin, not wildcard
+    const origin = req.headers.origin || 'https://www.sigmasigma.org';
+    res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
     res.setHeader('Access-Control-Max-Age', '86400');
