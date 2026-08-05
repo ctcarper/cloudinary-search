@@ -42,15 +42,28 @@ function isAllowedOrigin(req) {
   return refererAllowed || originAllowed;
 }
 
-// Parse multipart form data
+// Parse multipart form data with robust error handling
 async function parseForm(req) {
   return new Promise((resolve, reject) => {
     const form = new IncomingForm({
       maxFileSize: 1024 * 1024 * 500, // 500MB max
-      keepExtensions: true
+      keepExtensions: true,
+      maxFiles: 1,
+      multiples: false
     });
+
+    // Handle form errors explicitly
+    form.on('error', (err) => {
+      console.error('Formidable error:', err.message);
+      reject(new Error(`Form parsing error: ${err.message}`));
+    });
+
     form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
+      if (err) {
+        console.error('Form parse callback error:', err.message);
+        reject(new Error(`Form parse error: ${err.message}`));
+        return;
+      }
       resolve({ fields, files });
     });
   });
@@ -362,39 +375,68 @@ async function updateAssetWithOCRTags(cloudinary, publicId, ocrText) {
 
 // Helper function to send response with CORS headers
 function sendResponse(res, statusCode, body) {
-  res.setHeader('Content-Type', 'application/json');
+  // Set CORS headers (must be before status/end for Vercel compatibility)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-  res.writeHead(statusCode);
-  res.end(JSON.stringify(body));
-}
-
-// Main handler (Vercel serverless format)
-module.exports = async (req, res) => {
-  console.log('=== Upload Request Started ===');
-  console.log('Method:', req.method);
+  res.setHeader('Content-Type', 'application/json');
   
-  // Handle OPTIONS requests
-  if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request');
-    res.writeHead(200, {
+  // Handle Vercel response object (has status and json methods)
+  if (res.status && typeof res.status === 'function') {
+    res.status(statusCode).json(body);
+  } else {
+    // Fallback for Node.js raw response object
+    res.writeHead(statusCode, {
+      'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, x-api-key'
     });
-    res.end();
-    return;
+    res.end(JSON.stringify(body));
   }
+}
 
-  if (req.method !== 'POST') {
-    console.log('Invalid method:', req.method);
-    sendResponse(res, 405, { error: 'Method not allowed' });
-    return;
-  }
+// Main handler (Vercel serverless format)
+module.exports = async (req, res) => {
+  try {
+    console.log('=== Upload Request Started ===');
+    console.log('Method:', req.method);
+    console.log('Origin:', req.headers.origin);
+    console.log('Referer:', req.headers.referer);
+    
+    // Set CORS headers on ALL responses (must be before status for Vercel)
+    // This is critical - set before any processing
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    
+    // Handle OPTIONS requests (preflight)
+    if (req.method === 'OPTIONS') {
+      console.log('Handling OPTIONS request');
+      if (res.status && typeof res.status === 'function') {
+        res.status(200).end();
+      } else {
+        res.writeHead(200, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
+          'Access-Control-Max-Age': '86400'
+        });
+        res.end();
+      }
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      console.log('Invalid method:', req.method);
+      sendResponse(res, 405, { error: 'Method not allowed' });
+      return;
+    }
 
   // Validate origin
   if (!isAllowedOrigin(req)) {
+    console.log('Origin validation failed');
     sendResponse(res, 403, { error: 'Access denied - invalid origin' });
     return;
   }

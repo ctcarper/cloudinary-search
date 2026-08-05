@@ -681,6 +681,19 @@
   </div>
 
   <script>
+    // ========================================
+    // CONFIGURATION REQUIRED
+    // ========================================
+    // For large file uploads (>25MB), you need to configure Cloudinary direct upload:
+    // 1. Go to https://cloudinary.com/console/settings/upload
+    // 2. Scroll to "Upload presets" and click "Add upload preset"
+    // 3. Set name to something like "unsigned_uploader"
+    // 4. Set "Signing Mode" to "Unsigned"
+    // 5. Save and copy the preset name
+    // 6. Find your Cloud Name at https://cloudinary.com/console/
+    // 7. Replace YOUR_CLOUD_NAME and YOUR_UNSIGNED_PRESET below
+    // ========================================
+
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const uploadSection = document.getElementById('uploadSection');
@@ -713,6 +726,10 @@
     // Get API key from URL parameter or global variable
     const urlParams = new URLSearchParams(window.location.search);
     const API_KEY = urlParams.get('key') || window.API_KEY || '';
+
+    // Cloudinary config (for direct uploads of large files)
+    const CLOUDINARY_CLOUD_NAME = 'SigmaSigma'; // Replace with your Cloudinary cloud name
+    const CLOUDINARY_UPLOAD_PRESET = 'ocr_upload'; // Replace with your unsigned preset
 
     // Helper function to add API key to fetch requests
     function getApiHeaders(additionalHeaders = {}) {
@@ -748,6 +765,12 @@
 
     // Check version on load
     checkVersion();
+
+    // Warn if Cloudinary direct upload not configured
+    if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME === 'YOUR_CLOUD_NAME') {
+      console.warn('⚠️ Cloudinary direct upload not configured. Large files (>25MB) will fail.');
+      console.warn('Configure in squarespace-uploader.html: CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET');
+    }
 
     // Fetch folders from API
     async function loadFolders() {
@@ -1008,26 +1031,34 @@
       const item = fileQueue[idx];
       
       try {
-        document.getElementById('uploadProgress').textContent = idx + 1;
-        document.getElementById('currentFileName').textContent = item.file.name;
-        document.getElementById('currentFileStatus').style.display = 'block';
-        loading.classList.add('active');
+        const uploadProgressEl = document.getElementById('uploadProgress');
+        const currentFileNameEl = document.getElementById('currentFileName');
+        const currentFileStatusEl = document.getElementById('currentFileStatus');
+        const uploadProgressBarEl = document.getElementById('uploadProgressBar');
+        
+        if (uploadProgressEl) uploadProgressEl.textContent = idx + 1;
+        if (currentFileNameEl) currentFileNameEl.textContent = item.file.name;
+        if (currentFileStatusEl) currentFileStatusEl.style.display = 'block';
+        if (loading) loading.classList.add('active');
         
         // Reset file progress bar to 0 at start of each file
-        document.getElementById('uploadProgressBar').style.width = '0%';
+        if (uploadProgressBarEl) uploadProgressBarEl.style.width = '0%';
 
         const fileSizeMB = item.file.size / (1024 * 1024);
+        console.log(`📊 File: ${item.file.name}, Size: ${fileSizeMB.toFixed(2)}MB`);
         let data;
 
-        // For large files (>100MB), use direct upload to bypass serverless limits
-        if (fileSizeMB > 100 && item.type !== 'image') {
-          console.log(`File is ${fileSizeMB.toFixed(2)}MB - using direct upload`);
+        // For large files (>20MB), use direct Cloudinary upload to bypass Vercel limits
+        // Vercel Pro limit is 32MB, so 20MB threshold provides safety margin
+        if (fileSizeMB > 20) {
+          console.log(`📤 Routing to DIRECT Cloudinary (large file: ${fileSizeMB.toFixed(2)}MB > 20MB threshold)`);
           data = await uploadDirectToCloudinary(item);
           if (!data.success) {
             throw new Error('Direct upload failed');
           }
         } else {
-          // Use server upload for small files or images
+          console.log(`📥 Routing through Vercel backend (small file: ${fileSizeMB.toFixed(2)}MB ≤ 20MB)`);
+          // Use server upload for small files
           data = await uploadViaServer(item);
         }
 
@@ -1035,15 +1066,23 @@
         uploadSummary.success++;
         if (item.type === 'video') {
           uploadSummary.videosUploaded++;
-          totalVideosUploaded.textContent = uploadSummary.videosUploaded;
+          const totalVideosUploadedEl = document.getElementById('totalVideosUploaded');
+          if (totalVideosUploadedEl) {
+            totalVideosUploadedEl.textContent = uploadSummary.videosUploaded;
+          }
         }
 
         // Update real-time counters
-        document.getElementById('realtimeSuccess').textContent = uploadSummary.success;
+        const realtimeSuccessEl = document.getElementById('realtimeSuccess');
+        if (realtimeSuccessEl) {
+          realtimeSuccessEl.textContent = uploadSummary.success;
+        }
 
         // Update overall progress (per file, not per byte)
         const progress = ((idx + 1) / fileQueue.length) * 100;
-        document.getElementById('uploadProgressBar').style.width = progress + '%';
+        if (uploadProgressBarEl) {
+          uploadProgressBarEl.style.width = progress + '%';
+        }
 
       } catch (error) {
         console.error(`Upload error for file ${idx}:`, error);
@@ -1052,7 +1091,10 @@
         uploadSummary.errors.push(`${item.file.name}: ${error.message}`);
         
         // Update real-time failed counter
-        document.getElementById('realtimeFailed').textContent = uploadSummary.failed;
+        const realtimeFailedEl = document.getElementById('realtimeFailed');
+        if (realtimeFailedEl) {
+          realtimeFailedEl.textContent = uploadSummary.failed;
+        }
         
         // Continue to next file instead of stopping
       } finally {
@@ -1095,7 +1137,10 @@
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
-            document.getElementById('uploadProgressBar').style.width = percentComplete + '%';
+            const uploadProgressBarEl = document.getElementById('uploadProgressBar');
+            if (uploadProgressBarEl) {
+              uploadProgressBarEl.style.width = percentComplete + '%';
+            }
             console.log(`Upload progress: ${percentComplete.toFixed(1)}%`);
           }
         });
@@ -1110,6 +1155,14 @@
             }
           } else {
             let errorMessage = `Upload failed (${xhr.status})`;
+            
+            // Handle specific error codes
+            if (xhr.status === 413) {
+              errorMessage = `File too large (413) - File exceeds upload limit. Try a smaller file.`;
+            } else if (xhr.status === 415) {
+              errorMessage = `Unsupported file type (415) - Please upload an image, video, audio, or PDF file.`;
+            }
+            
             try {
               const errorData = JSON.parse(xhr.responseText);
               errorMessage = errorData.error || errorMessage;
@@ -1121,7 +1174,7 @@
         });
 
         xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'));
+          reject(new Error('Network error during upload - Check your connection or CORS settings'));
         });
 
         xhr.addEventListener('abort', () => {
@@ -1157,20 +1210,24 @@
         );
       }
       
-      // Upload through backend endpoint instead of directly to Cloudinary
-      // This avoids CORS issues and supports larger files (up to 500MB)
+      // Build FormData for direct Cloudinary upload (no Vercel in between)
       const formData = new FormData();
       formData.append('file', item.file);
-      formData.append('name', item.mediaName);
-      formData.append('folder', folderToUse);
-      formData.append('isAudio', item.type === 'audio');
-      formData.append('isPDF', item.type === 'pdf');
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('public_id', `upload_${Date.now()}_${item.mediaName.replace(/\s+/g, '_')}`);
       
-      if (allTags.length > 0) {
-        allTags.forEach((tag, index) => {
-          formData.append(`tags[${index}]`, tag);
-        });
+      // Add folder if specified
+      if (folderToUse) {
+        formData.append('folder', folderToUse);
       }
+      
+      // Add tags
+      if (allTags.length > 0) {
+        formData.append('tags', allTags.join(','));
+      }
+      
+      // Add context with name for searchability
+      formData.append('context', `alt=${item.mediaName}`);
       
       // Use XMLHttpRequest to track upload progress
       return new Promise((resolve, reject) => {
@@ -1180,7 +1237,10 @@
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
-            document.getElementById('uploadProgressBar').style.width = percentComplete + '%';
+            const uploadProgressBarEl = document.getElementById('uploadProgressBar');
+            if (uploadProgressBarEl) {
+              uploadProgressBarEl.style.width = percentComplete + '%';
+            }
             console.log(`Upload progress: ${percentComplete.toFixed(1)}%`);
           }
         });
@@ -1204,36 +1264,41 @@
                 }
               });
             } catch (e) {
-              reject(new Error('Invalid response from server'));
+              reject(new Error('Invalid response from Cloudinary'));
             }
           } else {
             let errorMessage = `HTTP ${xhr.status}`;
+            
+            // Handle specific error codes
+            if (xhr.status === 413) {
+              errorMessage = `File too large (413) - Cloudinary rejected file size. Check your Cloudinary plan limits.`;
+            } else if (xhr.status === 400) {
+              errorMessage = `Bad request (400) - Check that your upload preset is correct.`;
+            } else if (xhr.status === 401) {
+              errorMessage = `Unauthorized (401) - Check your Cloudinary credentials.`;
+            }
+            
             try {
               const errorData = JSON.parse(xhr.responseText);
               errorMessage = errorData.error?.message || errorData.message || errorMessage;
             } catch (e) {
               errorMessage = xhr.responseText || errorMessage;
             }
-            reject(new Error(`Upload failed: ${errorMessage}`));
+            reject(new Error(`Cloudinary upload failed: ${errorMessage}`));
           }
         });
 
         xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'));
+          reject(new Error('Network error during upload to Cloudinary'));
         });
 
         xhr.addEventListener('abort', () => {
           reject(new Error('Upload cancelled'));
         });
 
-        const uploadUrl = `${API_BASE_URL}/api/upload`;
-        xhr.open('POST', uploadUrl, true);
-        
-        // Add API key header if present
-        if (API_KEY) {
-          xhr.setRequestHeader('x-api-key', API_KEY);
-        }
-        
+        // Upload directly to Cloudinary (bypasses Vercel)
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+        xhr.open('POST', cloudinaryUrl, true);
         xhr.send(formData);
       });
     }
