@@ -1048,17 +1048,17 @@
         console.log(`📊 File: ${item.file.name}, Size: ${fileSizeMB.toFixed(2)}MB`);
         let data;
 
-        // For large files (>10MB), use direct Cloudinary upload to bypass Vercel limits
+        // For large files (>5MB), use direct Cloudinary upload to bypass Vercel limits
         // Vercel Pro limit is 32MB, but multipart form overhead can be significant
-        // Using 10MB threshold to ensure images bypass Vercel and upload direct to Cloudinary
-        if (fileSizeMB > 10) {
-          console.log(`📤 Routing to DIRECT Cloudinary (large file: ${fileSizeMB.toFixed(2)}MB > 10MB threshold)`);
+        // Using 5MB threshold to ensure images bypass Vercel and upload direct to Cloudinary
+        if (fileSizeMB > 5) {
+          console.log(`📤 Routing to DIRECT Cloudinary (large file: ${fileSizeMB.toFixed(2)}MB > 5MB threshold)`);
           data = await uploadDirectToCloudinary(item);
           if (!data.success) {
             throw new Error('Direct upload failed');
           }
         } else {
-          console.log(`📥 Routing through Vercel backend (small file: ${fileSizeMB.toFixed(2)}MB ≤ 10MB)`);
+          console.log(`📥 Routing through Vercel backend (small file: ${fileSizeMB.toFixed(2)}MB ≤ 5MB)`);
           // Use server upload for small files
           data = await uploadViaServer(item);
         }
