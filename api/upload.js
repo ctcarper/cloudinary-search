@@ -392,20 +392,25 @@ module.exports = async (req, res) => {
     console.log('Origin:', req.headers.origin);
     console.log('Referer:', req.headers.referer);
     
-    // Set CORS headers on ALL responses (must be before status for Vercel)
-    // This is critical - set before any processing
+    // Handle OPTIONS requests (preflight) FIRST with proper CORS headers
+    // Use writeHead() which atomically sets status + headers (more reliable on Vercel)
+    if (req.method === 'OPTIONS') {
+      console.log('Handling OPTIONS request');
+      res.writeHead(200, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
+        'Access-Control-Max-Age': '86400'
+      });
+      res.end();
+      return;
+    }
+
+    // Set CORS headers for non-OPTIONS requests
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
     res.setHeader('Access-Control-Max-Age', '86400');
-    
-    // Handle OPTIONS requests (preflight) - MUST include CORS headers
-    if (req.method === 'OPTIONS') {
-      console.log('Handling OPTIONS request');
-      // Headers already set at top of handler, just send 200
-      res.status(200).end();
-      return;
-    }
 
     if (req.method !== 'POST') {
       console.log('Invalid method:', req.method);
