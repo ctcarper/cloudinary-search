@@ -375,25 +375,17 @@ async function updateAssetWithOCRTags(cloudinary, publicId, ocrText) {
 
 // Helper function to send response with CORS headers
 function sendResponse(res, statusCode, body) {
-  // Set CORS headers (must be before status/end for Vercel compatibility)
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-  res.setHeader('Content-Type', 'application/json');
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
+    'Access-Control-Max-Age': '86400',
+    'Content-Type': 'application/json'
+  };
   
-  // Handle Vercel response object (has status and json methods)
-  if (res.status && typeof res.status === 'function') {
-    res.status(statusCode).json(body);
-  } else {
-    // Fallback for Node.js raw response object
-    res.writeHead(statusCode, {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, x-api-key'
-    });
-    res.end(JSON.stringify(body));
-  }
+  // Use writeHead for both Vercel and Node.js to ensure CORS headers are included
+  res.writeHead(statusCode, corsHeaders);
+  res.end(JSON.stringify(body));
 }
 
 // Main handler (Vercel serverless format)
@@ -411,20 +403,20 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
     res.setHeader('Access-Control-Max-Age', '86400');
     
-    // Handle OPTIONS requests (preflight)
+    // Handle OPTIONS requests (preflight) - MUST include CORS headers
     if (req.method === 'OPTIONS') {
       console.log('Handling OPTIONS request');
-      if (res.status && typeof res.status === 'function') {
-        res.status(200).end();
-      } else {
-        res.writeHead(200, {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
-          'Access-Control-Max-Age': '86400'
-        });
-        res.end();
-      }
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
+        'Access-Control-Max-Age': '86400',
+        'Content-Length': '0'
+      };
+      
+      // For both Vercel and Node.js, use writeHead to ensure headers are sent
+      res.writeHead(200, corsHeaders);
+      res.end();
       return;
     }
 
