@@ -1164,20 +1164,12 @@
     elements.folderSelect.addEventListener('change', (e) => {
       currentFolder = e.target.value;
       currentQuery = '';
-      
-      // Handle composites special case
-      if (currentFolder === '__composites__') {
-        currentFolder = ''; // Reset folder for composites
-        currentQuery = 'composite';
-        elements.searchInput.value = 'composite';
-      } else {
-        elements.searchInput.value = ''; // Clear search input
-      }
+      elements.searchInput.value = ''; // Clear search input
       
       currentCursor = null;
       searchHistory = [];
       
-      // Fetch results
+      // Fetch results (folder parameter will be passed to API)
       fetchResults(currentQuery, null, DEFAULT_MAX_RESULTS);
     });
 
