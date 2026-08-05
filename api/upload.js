@@ -392,10 +392,8 @@ module.exports = async (req, res) => {
     // Use writeHead() which atomically sets status + headers (more reliable on Vercel)
     if (req.method === 'OPTIONS') {
       console.log('Handling OPTIONS request');
-      // With custom headers (x-api-key), must use specific origin, not wildcard
-      const origin = req.headers.origin || 'https://www.sigmasigma.org';
       res.writeHead(200, {
-        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Origin': 'https://www.sigmasigma.org',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
         'Access-Control-Max-Age': '86400'
@@ -405,9 +403,7 @@ module.exports = async (req, res) => {
     }
 
     // Set CORS headers for non-OPTIONS requests
-    // With custom headers (x-api-key), must use specific origin, not wildcard
-    const origin = req.headers.origin || 'https://www.sigmasigma.org';
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.sigmasigma.org');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
     res.setHeader('Access-Control-Max-Age', '86400');
