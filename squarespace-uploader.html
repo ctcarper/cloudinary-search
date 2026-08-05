@@ -1047,22 +1047,32 @@
 
         const fileSizeMB = item.file.size / (1024 * 1024);
         console.log(`📊 File: ${item.file.name}, Size: ${fileSizeMB.toFixed(2)}MB, Type: ${item.type}`);
-        console.log(`✅ [BUILD-VERSION-3] Type-based routing active - checking item.type: '${item.type}'`);
+        console.log(`🚀 [V4-DIRECT-ONLY] NEW UPLOAD STRATEGY - ALL IMAGES/VIDEOS GO DIRECT`);
+        
         let data;
 
-        // Route by file type:
-        // - Images & videos: always use direct Cloudinary (bypasses Vercel 4.5MB limit)
-        // - Audio & PDF: route through Vercel backend
-        // Vercel limit is 4.5MB, but direct Cloudinary has no limit
-        if (item.type === 'image' || item.type === 'video') {
-          console.log(`📤 Routing to DIRECT Cloudinary (${item.type})`);
+        // FORCE direct upload for images and videos - NO SIZE CHECKS, NO BACKEND ROUTING
+        // This completely bypasses Vercel's 4.5MB limit
+        if (item.type === 'image') {
+          console.log(`✅ IMAGE DETECTED: Uploading DIRECTLY to Cloudinary API (no Vercel)`);
           data = await uploadDirectToCloudinary(item);
           if (!data.success) {
             throw new Error('Direct upload failed');
           }
+        } else if (item.type === 'video') {
+          console.log(`✅ VIDEO DETECTED: Uploading DIRECTLY to Cloudinary API (no Vercel)`);
+          data = await uploadDirectToCloudinary(item);
+          if (!data.success) {
+            throw new Error('Direct upload failed');
+          }
+        } else if (item.type === 'audio') {
+          console.log(`❌ AUDIO: Routing through Vercel backend`);
+          data = await uploadViaServer(item);
+        } else if (item.type === 'pdf') {
+          console.log(`❌ PDF: Routing through Vercel backend`);
+          data = await uploadViaServer(item);
         } else {
-          console.log(`📥 Routing through Vercel backend (${item.type})`);
-          // Audio and PDF files go through backend
+          console.log(`❌ UNKNOWN TYPE: Routing through Vercel backend`);
           data = await uploadViaServer(item);
         }
 
