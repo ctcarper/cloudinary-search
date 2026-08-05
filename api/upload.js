@@ -383,23 +383,22 @@ function sendResponse(res, statusCode, body) {
 
 // Main handler (Vercel serverless format)
 module.exports = async (req, res) => {
+  // Handle OPTIONS requests (preflight) FIRST - before try-catch
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.sigmasigma.org');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    res.statusCode = 200;
+    res.end();
+    return;
+  }
+
   try {
     console.log('=== Upload Request Started ===');
     console.log('Method:', req.method);
     console.log('Origin:', req.headers.origin);
     console.log('Referer:', req.headers.referer);
-    
-    // Handle OPTIONS requests (preflight) FIRST with proper CORS headers
-    if (req.method === 'OPTIONS') {
-      console.log('Handling OPTIONS request');
-      res.setHeader('Access-Control-Allow-Origin', 'https://www.sigmasigma.org');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
-      res.setHeader('Access-Control-Max-Age', '86400');
-      res.statusCode = 200;
-      res.end();
-      return;
-    }
 
     // Set CORS headers for non-OPTIONS requests
     res.setHeader('Access-Control-Allow-Origin', 'https://www.sigmasigma.org');
