@@ -1214,14 +1214,15 @@
       }
     }
 
-    // Auto-load composites on initial page load
+    // Auto-load composites folder on initial page load
     window.addEventListener('load', () => {
-      currentQuery = 'composite';
+      currentFolder = 'composites';  // Use actual folder path
+      currentQuery = '';  // Don't do text search
       elements.searchInput.value = '';
-      currentFolder = '';
+      elements.folderSelect.value = 'composites';  // Update dropdown to match
       currentCursor = null;
       searchHistory = [];
-      fetchResults('composite', null, DEFAULT_MAX_RESULTS);
+      fetchResults(currentQuery, null, DEFAULT_MAX_RESULTS);
     });
 
   </script>
