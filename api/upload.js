@@ -375,13 +375,11 @@ async function updateAssetWithOCRTags(cloudinary, publicId, ocrText) {
 
 // Helper function to send response with CORS headers
 function sendResponse(res, statusCode, body) {
-  // Use Express res.set() method for CORS headers (works in Vercel)
-  res.set({
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
-    'Content-Type': 'application/json'
-  });
+  // Use res.setHeader() consistently (native Node.js method, Vercel-compatible)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
+  res.setHeader('Content-Type', 'application/json');
   
   res.status(statusCode).json(body);
 }
@@ -403,17 +401,8 @@ module.exports = async (req, res) => {
     
     // Handle OPTIONS requests (preflight) - MUST include CORS headers
     if (req.method === 'OPTIONS') {
-      console.log('Handling OPTIONS request - setting CORS headers');
-      
-      // Use Express res.set() method (works in Vercel)
-      res.set({
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
-        'Access-Control-Max-Age': '86400'
-      });
-      
-      console.log('OPTIONS headers set, sending 200 response');
+      console.log('Handling OPTIONS request');
+      // Headers already set at top of handler, just send 200
       res.status(200).end();
       return;
     }
