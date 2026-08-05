@@ -389,15 +389,13 @@ module.exports = async (req, res) => {
     console.log('Referer:', req.headers.referer);
     
     // Handle OPTIONS requests (preflight) FIRST with proper CORS headers
-    // Use writeHead() which atomically sets status + headers (more reliable on Vercel)
     if (req.method === 'OPTIONS') {
       console.log('Handling OPTIONS request');
-      res.writeHead(200, {
-        'Access-Control-Allow-Origin': 'https://www.sigmasigma.org',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, x-api-key, Content-Length',
-        'Access-Control-Max-Age': '86400'
-      });
+      res.setHeader('Access-Control-Allow-Origin', 'https://www.sigmasigma.org');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Content-Length');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      res.statusCode = 200;
       res.end();
       return;
     }
