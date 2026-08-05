@@ -1,4 +1,4 @@
-<!-- Force Vercel rebuild: v2 -->
+<!-- Force Vercel rebuild: v3 (2026-08-04T01:50:00Z) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1047,6 +1047,7 @@
 
         const fileSizeMB = item.file.size / (1024 * 1024);
         console.log(`📊 File: ${item.file.name}, Size: ${fileSizeMB.toFixed(2)}MB, Type: ${item.type}`);
+        console.log(`✅ [BUILD-VERSION-3] Type-based routing active - checking item.type: '${item.type}'`);
         let data;
 
         // Route by file type:
